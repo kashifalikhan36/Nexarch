@@ -1,7 +1,8 @@
 import networkx as nx
 from sqlalchemy.orm import Session
 from db.models import Span
-from schemas.architecture import Node, Edge, NodeMetrics
+from models.node import Node, NodeMetrics
+from models.edge import Edge
 from services.metrics_service import MetricsService
 from typing import List, Tuple
 from core.logging import get_logger

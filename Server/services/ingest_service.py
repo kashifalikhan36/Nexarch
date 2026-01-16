@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from db.models import Span
-from schemas.ingest import SpanIngest
+from db.models import Span as DBSpan
+from models.span import Span as SpanIngest
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -9,9 +9,9 @@ logger = get_logger(__name__)
 class IngestService:
     
     @staticmethod
-    def store_span(db: Session, span_data: SpanIngest) -> Span:
+    def store_span(db: Session, span_data: SpanIngest) -> DBSpan:
         """Store span in DB"""
-        span = Span(
+        span = DBSpan(
             trace_id=span_data.trace_id,
             span_id=span_data.span_id,
             parent_span_id=span_data.parent_span_id,

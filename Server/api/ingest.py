@@ -1,9 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from db.base import get_db
-from schemas.ingest import SpanIngest, IngestResponse
+from models.span import Span as SpanIngest
+from pydantic import BaseModel
 from services.ingest_service import IngestService
 from core.logging import get_logger
+
+class IngestResponse(BaseModel):
+    status: str = "accepted"
+    span_id: str
 
 router = APIRouter(prefix="/api/v1", tags=["ingest"])
 logger = get_logger(__name__)

@@ -1,11 +1,22 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from db.base import get_db
-from schemas.workflow import WorkflowsResponse, WorkflowComparison
+from pydantic import BaseModel
+from typing import List, Dict, Any
+from models.workflow import Workflow
 from services.workflow_generator import WorkflowGenerator
 from services.issue_detector import IssueDetector
 from datetime import datetime
 from core.logging import get_logger
+
+class WorkflowsResponse(BaseModel):
+    workflows: List[Workflow]
+    generated_at: str
+
+class WorkflowComparison(BaseModel):
+    workflows: List[Workflow]
+    recommendation: str
+    comparison_matrix: Dict[str, Any]
 
 router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
 logger = get_logger(__name__)
