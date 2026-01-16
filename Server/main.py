@@ -93,4 +93,5 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=443, reload=True)
+    # FastAPI runs on 0.0.0.0 to be accessible from network
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
