@@ -80,13 +80,13 @@ class E2ETest:
         ]
         
         response = self.session.post(
-            f"{BASE_URL}/ingest/batch",
+            f"{BASE_URL}/api/v1/ingest/batch",
             headers=self.headers(),
-            json={"spans": spans}
+            json=spans
         )
-        assert response.status_code == 200
+        assert response.status_code == 202
         data = response.json()
-        print(f"✅ Ingested {data['ingested']} spans")
+        print(f"✅ Ingested {data['count']} spans")
     
     def test_5_dashboard_overview(self):
         """Test 5: Dashboard overview"""

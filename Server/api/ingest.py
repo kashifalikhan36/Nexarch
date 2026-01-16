@@ -7,7 +7,7 @@ from services.ingest_service import IngestService
 from core.logging import get_logger
 from core.auth import get_tenant_id
 from core.cache import get_cache_manager
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 
 class IngestResponse(BaseModel):
@@ -22,9 +22,11 @@ class BatchIngestResponse(BaseModel):
 class ArchitectureDiscoveryData(BaseModel):
     service_name: str
     service_type: str
+    version: Optional[str] = None
     endpoints: List[Dict[str, Any]]
     databases: List[Dict[str, Any]]
     external_services: List[str] = []
+    middleware: List[str] = []
     dependencies: Dict[str, List[str]] = {}
     architecture_patterns: Dict[str, Any] = {}
     discovered_at: str
@@ -113,9 +115,9 @@ async def ingest_architecture_discovery(
             # Update existing discovery
             existing.service_type = discovery.service_type
             existing.version = discovery.version
-            existing.endpoints = json.dumps([e.model_dump() for e in discovery.endpoints])
-            existing.databases = json.dumps([d.model_dump() for d in discovery.databases])
-            existing.external_services = json.dumps([s.model_dump() for s in discovery.external_services])
+            existing.endpoints = json.dumps(discovery.endpoints)
+            existing.databases = json.dumps(discovery.databases)
+            existing.external_services = json.dumps(discovery.external_services)
             existing.middleware = json.dumps(discovery.middleware)
             existing.architecture_patterns = json.dumps(discovery.architecture_patterns)
             existing.updated_at = datetime.utcnow()
@@ -127,9 +129,9 @@ async def ingest_architecture_discovery(
                 service_name=discovery.service_name,
                 service_type=discovery.service_type,
                 version=discovery.version,
-                endpoints=json.dumps([e.model_dump() for e in discovery.endpoints]),
-                databases=json.dumps([d.model_dump() for d in discovery.databases]),
-                external_services=json.dumps([s.model_dump() for s in discovery.external_services]),
+                endpoints=json.dumps(discovery.endpoints),
+                databases=json.dumps(discovery.databases),
+                external_services=json.dumps(discovery.external_services),
                 middleware=json.dumps(discovery.middleware),
                 architecture_patterns=json.dumps(discovery.architecture_patterns)
             )
