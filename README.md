@@ -1,8 +1,7 @@
 # Nexarch
 
-**Architecture Intelligence Platform for Modern Applications**
-
-Nexarch automatically analyzes your application's runtime behavior to reconstruct its architecture, identify bottlenecks, and generate optimized archittecture workflow alternatives with detailed comparisons.
+## Project Overview
+Nexarch is a B2B Architecture Intelligence Platform that understands how a software system actually works in production. Instead of relying on source code or static documentation, Nexarch observes runtime behavior (request flows, service interactions, dependencies, and performance signals) to reconstruct the system’s real architecture. It then detects bottlenecks and architectural issues and generates multiple improved architecture workflows (e.g., performance-focused, cost-optimized, low-risk) with clear comparisons. The goal is to help teams make fast, confident, data-backed architectural decisions and keep systems production-ready as they evolve.
 
 ## Problem Statement
 As Now a days software systems grow, and their real production architecture mostly becomes unclear. Teams no longer know how requests actually move through services, databases, and APIs. This actually makes it hard to find bottlenecks, fix performance issues, as well as decide how the system should be improved. Present time tools show logs and metrics, however they do not explain the system’s structure or guide about the architectural decisions.
