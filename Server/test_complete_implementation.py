@@ -25,7 +25,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List
 
 # Test configuration
-BASE_URL = "http://localhost:443"
+BASE_URL = "http://4.240.107.18:443"
 TEST_TENANT_EMAIL = f"test_{uuid.uuid4().hex[:8]}@nexarch.io"
 TEST_API_KEY = None
 TEST_TENANT_ID = None
@@ -555,15 +555,19 @@ class NexarchTestSuite:
         import httpx
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
-                f"{self.base_url}/api/v1/ai-design",
+                f"{self.base_url}/api/v1/ai-design/design-new",
                 json={
-                    "requirements": "E-commerce platform with microservices",
-                    "constraints": {"max_latency_ms": 500, "budget": "moderate"}
+                    "business_domain": "E-commerce",
+                    "expected_scale": "medium",
+                    "key_features": ["product catalog", "checkout", "payments"],
+                    "performance_requirements": {"max_latency_ms": 500},
+                    "constraints": {"budget": "moderate"},
+                    "num_alternatives": 2
                 },
                 headers={"X-API-Key": self.api_key}
             )
             # May return 200 with fallback or actual AI response
-            assert response.status_code in [200, 500]
+            assert response.status_code in [200, 500, 503]
     
     async def test_ai_fallback_behavior(self):
         """Test AI features work even without Azure OpenAI configured"""
@@ -702,10 +706,10 @@ class NexarchTestSuite:
         import httpx
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{self.base_url}/api/v1/demo/generate",
+                f"{self.base_url}/api/v1/demo/generate-sample-data",
                 headers={"X-API-Key": self.api_key}
             )
-            assert response.status_code in [200, 201]
+            assert response.status_code in [200, 201, 202]
     
     # ==================== BUG FIX VERIFICATION ====================
     

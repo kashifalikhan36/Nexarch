@@ -119,3 +119,31 @@ async def cache_health() -> Dict[str, Any]:
         "backend": "redis" if cache_manager.is_redis() else "in-memory",
         "stats": stats
     }
+
+
+@router.get("/info")
+async def get_cache_info(tenant_id: str = Depends(get_tenant_id)) -> Dict[str, Any]:
+    """
+    Get cache info (alias for stats)
+    Returns backend type and statistics
+    """
+    stats = cache_manager.get_stats()
+    return {
+        "backend": "redis" if cache_manager.is_redis() else "in-memory",
+        "tenant_id": tenant_id,
+        "stats": stats,
+        "is_connected": cache_manager.is_redis()
+    }
+
+
+@router.delete("/clear")
+async def clear_cache(tenant_id: str = Depends(get_tenant_id)) -> Dict[str, str]:
+    """
+    Clear all cache for current tenant (alias for invalidate)
+    """
+    cache_manager.invalidate(tenant_id)
+    logger.info(f"Cache cleared for tenant: {tenant_id}")
+    return {
+        "status": "success",
+        "message": f"Cache cleared for tenant {tenant_id}"
+    }
