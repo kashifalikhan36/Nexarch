@@ -101,6 +101,7 @@ The Nexarch platform processes collected spans to build a dependency graph:
 5. **Architecture Classification**: Categorizes architecture patterns (monolith, microservices, event-driven, layered)
 
 Graph schema example:
+
 ```
 Node(id=api-service, type=service)
   ↓ avg_latency=120ms, rps=50, error_rate=0.01
