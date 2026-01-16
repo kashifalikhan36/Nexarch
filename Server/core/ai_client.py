@@ -117,8 +117,9 @@ Return as JSON with keys: patterns (list), recommendations (list), critical_impr
             # Try to parse JSON
             try:
                 result = json.loads(response.content)
-            except:
+            except json.JSONDecodeError:
                 # Fallback parsing
+                logger.warning("Failed to parse AI response as JSON, using fallback")
                 result = {
                     "patterns": ["Circuit Breaker", "API Gateway", "Event Sourcing"],
                     "recommendations": ["Optimize performance", "Add caching", "Scale horizontally"],
@@ -177,7 +178,8 @@ Return as JSON: {{"workflows": [...]}}
                 if "workflows" in result:
                     logger.info(f"Generated {len(result['workflows'])} AI workflow alternatives")
                     return result
-            except:
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse AI workflow response as JSON")
                 pass
             
             # Fallback
@@ -280,7 +282,8 @@ Return as JSON: {{"workflows": [...]}}
         try:
             data = json.loads(content)
             return AIArchitectureRecommendation(**data)
-        except:
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning(f"Failed to parse AI recommendation: {e}, using fallback")
             # Fallback to default
             return AIArchitectureRecommendation(
                 architecture_type="microservices",
@@ -300,7 +303,8 @@ Return as JSON: {{"workflows": [...]}}
         try:
             data = json.loads(content)
             return [AIWorkflowGeneration(**w) for w in data]
-        except:
+        except (json.JSONDecodeError, ValueError, TypeError) as e:
+            logger.warning(f"Failed to parse AI workflows: {e}")
             return []
 
 

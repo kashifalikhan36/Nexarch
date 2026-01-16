@@ -4,8 +4,9 @@ from contextlib import asynccontextmanager
 from core.config import get_settings
 from core.logging import setup_logging, get_logger
 from core.rate_limit import RateLimitMiddleware
+from core.cache import init_cache
 from db.base import engine, Base
-from api import ingest, architecture, workflows, health, admin, dashboard, ai_design, system, demo
+from api import ingest, architecture, workflows, health, admin, dashboard, ai_design, system, demo, cache_api
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -15,18 +16,38 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     """Startup and shutdown"""
     setup_logging(settings.DEBUG)
+    
+    # Initialize cache
+    if settings.ENABLE_CACHING:
+        redis_url = settings.get_redis_url()
+        cache_manager = init_cache(redis_url, settings.CACHE_TTL_SECONDS)
+        if cache_manager.is_redis():
+            logger.info("✅ Azure Cache for Redis initialized")
+        else:
+            logger.info("ℹ️  In-memory cache initialized (fallback)")
+    else:
+        logger.info("⚠️  Caching disabled")
+    
+    # Initialize database
     logger.info("Creating database tables")
     Base.metadata.create_all(bind=engine)
-    logger.info(f"{settings.APP_NAME} started - Multi-tenant mode")
+    
+    logger.info(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} started")
+    logger.info(f"   Multi-tenant: {'✓' if settings.ENABLE_MULTI_TENANT else '✗'}")
+    logger.info(f"   Caching: {'✓ Redis' if settings.ENABLE_CACHING and settings.get_redis_url() else '✓ Memory' if settings.ENABLE_CACHING else '✗'}")
+    logger.info(f"   AI Generation: {'✓' if settings.ENABLE_AI_GENERATION else '✗'}")
+    logger.info(f"   Rate Limiting: {'✓' if settings.ENABLE_RATE_LIMITING else '✗'}")
+    
     yield
-    logger.info(f"{settings.APP_NAME} shutdown")
+    
+    logger.info(f"🛑 {settings.APP_NAME} shutdown")
 
 
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     lifespan=lifespan,
-    description="Nexarch - Multi-tenant Architecture Intelligence Platform"
+    description="Nexarch - Multi-tenant Architecture Intelligence Platform with Azure Cache for Redis"
 )
 
 # CORS
@@ -45,9 +66,10 @@ app.add_middleware(RateLimitMiddleware)
 app.include_router(health.router)
 app.include_router(system.router)  # System info and statistics
 app.include_router(demo.router)  # Demo/test endpoints for sample data
+app.include_router(cache_api.router)  # Cache management API
 app.include_router(admin.router)  # Admin routes for tenant management
 app.include_router(dashboard.router)  # Dashboard endpoints with AI features
-app.include_router(ai_design.router)  # AI-powered architecture design (THE CRAZY STUFF!)
+app.include_router(ai_design.router)  # AI-powered architecture design
 app.include_router(ingest.router)
 app.include_router(architecture.router)
 app.include_router(workflows.router)

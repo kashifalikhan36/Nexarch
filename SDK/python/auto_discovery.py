@@ -281,7 +281,7 @@ class ArchitectureDiscovery:
                     host_and_rest = '@'.join(parts[1:])
                     return f"{prefix}://{user}:***@{host_and_rest}"
             return url
-        except:
+        except Exception:
             return "***"
 
 

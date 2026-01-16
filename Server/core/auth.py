@@ -66,7 +66,8 @@ async def verify_api_key(
     try:
         api_key_obj.last_used = datetime.now()
         db.commit()
-    except:
+    except Exception as e:
+        logger.warning(f"Failed to update API key last_used: {e}")
         pass  # Don't fail request if update fails
     
     logger.info(f"Authenticated request for tenant: {tenant.id}")

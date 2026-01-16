@@ -19,5 +19,5 @@ async def optional_auth(
         # We need to call verify_api_key but it needs db dependency
         # For now, return None - this is a simplified version
         return None
-    except:
+    except Exception:
         return None

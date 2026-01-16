@@ -3,9 +3,12 @@ from sqlalchemy.orm import Session
 from db.base import get_db
 from datetime import datetime
 from core.config import get_settings
+from core.logging import get_logger
 import sys
 
 router = APIRouter(prefix="/api/v1", tags=["health"])
+logger = get_logger(__name__)
+settings = get_settings()
 
 
 @router.get("/health")
@@ -27,7 +30,8 @@ async def detailed_health_check(db: Session = Depends(get_db)):
     try:
         db.execute("SELECT 1")
         db_healthy = True
-    except:
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
         db_healthy = False
     
     # Check AI client
@@ -36,7 +40,8 @@ async def detailed_health_check(db: Session = Depends(get_db)):
         from core.ai_client import get_ai_client
         ai_client = get_ai_client()
         ai_healthy = ai_client.llm is not None
-    except:
+    except Exception as e:
+        logger.warning(f"AI client health check failed: {e}")
         ai_healthy = False
     
     return {
@@ -66,7 +71,8 @@ async def readiness_check(db: Session = Depends(get_db)):
     try:
         db.execute("SELECT 1")
         return {"status": "ready"}
-    except:
+    except Exception as e:
+        logger.error(f"Readiness check failed: {e}")
         return {"status": "not_ready"}, 503
 
 

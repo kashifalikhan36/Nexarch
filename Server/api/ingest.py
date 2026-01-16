@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from services.ingest_service import IngestService
 from core.logging import get_logger
 from core.auth import get_tenant_id
+from core.cache import get_cache_manager
 from typing import List, Dict, Any
 from datetime import datetime
 
@@ -30,6 +31,7 @@ class ArchitectureDiscoveryData(BaseModel):
 
 router = APIRouter(prefix="/api/v1", tags=["ingest"])
 logger = get_logger(__name__)
+cache_manager = get_cache_manager()
 
 
 @router.post("/ingest", status_code=202, response_model=IngestResponse)
@@ -41,6 +43,11 @@ async def ingest_span(
     """Accept telemetry span with tenant isolation"""
     try:
         stored_span = IngestService.store_span(db, span, tenant_id)
+        
+        # Invalidate dashboard cache when new data arrives
+        cache_manager.invalidate(tenant_id, "dashboard_overview")
+        cache_manager.invalidate(tenant_id, "architecture_map")
+        
         return IngestResponse(span_id=stored_span.span_id)
     except Exception as e:
         logger.error(f"Ingest failed for tenant {tenant_id}: {e}")

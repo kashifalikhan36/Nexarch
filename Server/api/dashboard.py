@@ -75,12 +75,15 @@ async def get_dashboard_overview(
 ):
     """
     Get high-level dashboard overview with all key metrics
+    Cached for 2 minutes (frequently accessed)
     """
     # Check cache
     cached = cache_manager.get(tenant_id, "dashboard_overview")
     if cached:
-        logger.info(f"Returning cached dashboard overview for tenant {tenant_id}")
+        logger.info(f"✓ Cache HIT: dashboard_overview for tenant {tenant_id}")
         return DashboardOverview(**cached)
+    
+    logger.info(f"✗ Cache MISS: dashboard_overview for tenant {tenant_id}")
     
     # Build graph
     nodes, edges = GraphService.build_graph(db, tenant_id)
@@ -119,8 +122,8 @@ async def get_dashboard_overview(
         "last_updated": datetime.now().isoformat()
     }
     
-    # Cache result
-    cache_manager.set(tenant_id, "dashboard_overview", overview)
+    # Cache result for 2 minutes (120 seconds) - frequently accessed
+    cache_manager.set(tenant_id, "dashboard_overview", overview, ttl=120)
     
     return DashboardOverview(**overview)
 

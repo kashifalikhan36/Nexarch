@@ -21,9 +21,17 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./nexarch.db"  # Change to PostgreSQL for production
     
-    # Redis for caching (optional - falls back to in-memory)
+    # Azure Cache for Redis Configuration
+    # Format: redis://[:password]@host:port/db or rediss://[:password]@host:port/db (SSL)
+    # Example Azure: rediss://:password@your-cache.redis.cache.windows.net:6380/0
     REDIS_URL: Optional[str] = None
-    CACHE_TTL_SECONDS: int = 300  # 5 minutes
+    REDIS_HOST: Optional[str] = None  # Alternative: specify host/port separately
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: Optional[str] = None
+    REDIS_SSL: bool = True  # Azure Cache for Redis uses SSL by default
+    REDIS_DB: int = 0
+    CACHE_TTL_SECONDS: int = 300  # 5 minutes default TTL
+    CACHE_ENABLED: bool = True  # Master switch for caching
     
     # Azure OpenAI Configuration
     AZURE_OPENAI_ENDPOINT: str = ""
@@ -58,6 +66,17 @@ class Settings(BaseSettings):
     ENABLE_CACHING: bool = True
     ENABLE_RATE_LIMITING: bool = True
     
+    def get_redis_url(self) -> Optional[str]:
+        """Build Redis URL from components if REDIS_URL not provided"""
+        if self.REDIS_URL:
+            return self.REDIS_URL
+        
+        if self.REDIS_HOST and self.REDIS_PASSWORD:
+            protocol = "rediss" if self.REDIS_SSL else "redis"
+            return f"{protocol}://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+        
+        return None
+    
     class Config:
         env_file = ".env"
         case_sensitive = True
@@ -70,4 +89,3 @@ def get_settings() -> Settings:
 
 # Singleton instance
 settings = get_settings()
-
