@@ -26,45 +26,45 @@ def get_current_architecture(tenant_id: Optional[str] = None) -> Dict[str, Any]:
 
 
 @mcp.tool()
-def get_detected_issues(tenant_id: Optional[str] = None) -> Dict[str, Any]:
+async def get_detected_issues(tenant_id: Optional[str] = None) -> Dict[str, Any]:
     """Get all detected architectural issues with AI enhancement
     
     Args:
         tenant_id: Optional tenant ID for multi-tenant isolation (defaults to "default")
     """
-    return tools.get_detected_issues(tenant_id)
+    return await tools.get_detected_issues(tenant_id)
 
 
 @mcp.tool()
-def generate_workflows(tenant_id: Optional[str] = None, goal: str = "optimize_performance") -> Dict[str, Any]:
+async def generate_workflows(tenant_id: Optional[str] = None, goal: str = "optimize_performance") -> Dict[str, Any]:
     """Generate 3 workflow alternatives using LangGraph + Azure OpenAI reasoning
     
     Args:
         tenant_id: Optional tenant ID for multi-tenant isolation (defaults to "default")
         goal: Optimization goal - optimize_performance, reduce_cost, minimize_changes
     """
-    return tools.generate_workflows(tenant_id, goal)
+    return await tools.generate_workflows(tenant_id, goal)
 
 
 @mcp.tool()
-def compare_workflows(tenant_id: Optional[str] = None) -> Dict[str, Any]:
+async def compare_workflows(tenant_id: Optional[str] = None) -> Dict[str, Any]:
     """Compare generated workflows with intelligent multi-criteria recommendation
     
     Args:
         tenant_id: Optional tenant ID for multi-tenant isolation (defaults to "default")
     """
-    return tools.compare_workflows(tenant_id)
+    return await tools.compare_workflows(tenant_id)
 
 
 @mcp.tool()
-def explain_decision(workflow_id: str, tenant_id: Optional[str] = None) -> Dict[str, Any]:
+async def explain_decision(workflow_id: str, tenant_id: Optional[str] = None) -> Dict[str, Any]:
     """Explain reasoning behind a specific workflow decision with detailed analysis
     
     Args:
         workflow_id: ID of the workflow to explain
         tenant_id: Optional tenant ID for multi-tenant isolation (defaults to "default")
     """
-    return tools.explain_decision(workflow_id, tenant_id)
+    return await tools.explain_decision(workflow_id, tenant_id)
 
 
 @mcp.tool()

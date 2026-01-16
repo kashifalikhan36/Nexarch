@@ -15,7 +15,7 @@ if sdk_path not in sys.path:
 try:
     from python.client import NexarchSDK
 except ImportError:
-    print(f"❌ Failed to import NexarchSDK from {sdk_path}")
+    print(f"[FAIL] Failed to import NexarchSDK from {sdk_path}")
     sys.exit(1)
 
 # Configuration
@@ -33,7 +33,7 @@ class TestIntegrationSuite(unittest.IsolatedAsyncioTestCase):
         async with httpx.AsyncClient() as client:
             resp = await client.get(f"{BACKEND_URL}/api/v1/health")
             self.assertEqual(resp.status_code, 200)
-            print("\n✅ Backend is healthy")
+            print("\n[OK] Backend is healthy")
 
     async def test_2_create_tenant(self):
         """Create a tenant for isolation"""
@@ -47,7 +47,7 @@ class TestIntegrationSuite(unittest.IsolatedAsyncioTestCase):
             data = resp.json()
             TestIntegrationSuite.api_key = data["api_key"]
             TestIntegrationSuite.tenant_id = data["id"]
-            print(f"\n✅ Created tenant: {TEST_TENANT_NAME} (ID: {data['id']})")
+            print(f"\n[OK] Created tenant: {TEST_TENANT_NAME} (ID: {data['id']})")
 
     async def test_3_sdk_end_to_end(self):
         """
@@ -80,16 +80,29 @@ class TestIntegrationSuite(unittest.IsolatedAsyncioTestCase):
         )
         sdk.init(app)
         
-        print(f"\n🚀 Sending traces to {ingest_url}")
+        print(f"\n[START] Sending traces to {ingest_url}")
         
         # 3. Trigger Request
-        async with httpx.AsyncClient(app=app, base_url="http://test") as ac:
+        from httpx import ASGITransport
+        transport = ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
             resp = await ac.get("/test-endpoint")
             self.assertEqual(resp.status_code, 200)
             self.assertEqual(resp.json(), {"message": "Hello from SDK"})
             
         # 4. Wait for async ingestion
-        print("⏳ Waiting for trace ingestion...")
+        print("[WAIT] Waiting for trace ingestion...")
+        
+        # Force flush SDK (workaround for SDK batching bug)
+        try:
+            from python.queue import get_log_queue
+            queue = get_log_queue()
+            if queue._exporter:
+                print("[WAIT] Forcing SDK exporter flush...")
+                queue._exporter.flush()
+        except ImportError:
+            print("[FAIL] Could not import queue to force flush")
+
         await asyncio.sleep(5) 
         
         # 5. Verify on Backend
@@ -108,7 +121,7 @@ class TestIntegrationSuite(unittest.IsolatedAsyncioTestCase):
             print(f"   Found services: {service_ids}")
             
             self.assertTrue(service_found, f"SDK Service not found in architecture. Services: {service_ids}")
-            print("✅ SDK Trace successfully ingested!")
+            print("[OK] SDK Trace successfully ingested!")
 
     async def test_4_mcp_server_connection(self):
         """Verify MCP Server (SSE) is running"""
@@ -116,12 +129,12 @@ class TestIntegrationSuite(unittest.IsolatedAsyncioTestCase):
             try:
                 resp = await client.get(f"{MCP_SERVER_URL}/sse", timeout=2.0)
                 self.assertEqual(resp.status_code, 200)
-                print("\n✅ MCP Server reachable at /sse")
+                print("\n[OK] MCP Server reachable at /sse")
                 
             except httpx.TimeoutException:
-                print("\n✅ MCP Server reachable (connection kept open)")
+                print("\n[OK] MCP Server reachable (connection kept open)")
             except httpx.ConnectError:
-                self.fail("❌ MCP Server NOT running on port 8000")
+                self.fail("[FAIL] MCP Server NOT running on port 8000")
 
     async def test_5_mcp_tools(self):
         """Placeholder for MCP Tool Check"""
