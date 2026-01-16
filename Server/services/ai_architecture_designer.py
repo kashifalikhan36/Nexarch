@@ -74,8 +74,8 @@ class AIArchitectureDesigner:
             prompt = self._build_design_prompt(requirements, num_alternatives)
             
             # Use LangChain structured output
-            from langchain.output_parsers import PydanticOutputParser
-            from langchain.prompts import PromptTemplate
+            from langchain_core.output_parsers import PydanticOutputParser
+            from langchain_core.prompts import PromptTemplate
             
             parser = PydanticOutputParser(pydantic_object=ArchitectureDesign)
             

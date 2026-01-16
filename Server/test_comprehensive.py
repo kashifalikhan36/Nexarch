@@ -65,7 +65,7 @@ class NexarchTestSuite:
     
     def test_health_basic(self) -> str:
         """Test basic health endpoint"""
-        response = self.session.get(f"{BASE_URL}/health")
+        response = self.session.get(f"{BASE_URL}/api/v1/health")
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
         data = response.json()
         assert data.get("status") == "healthy", f"Status not healthy: {data}"
@@ -73,7 +73,7 @@ class NexarchTestSuite:
     
     def test_health_detailed(self) -> str:
         """Test detailed health endpoint"""
-        response = self.session.get(f"{BASE_URL}/health/detailed")
+        response = self.session.get(f"{BASE_URL}/api/v1/health/detailed")
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
         data = response.json()
         return f"Database: {data.get('database', 'N/A')}, AI: {data.get('ai_available', 'N/A')}"
@@ -393,7 +393,7 @@ def main():
     print(f"\n{Colors.CYAN}🔍 Checking if server is running at {BASE_URL}...{Colors.RESET}")
     
     try:
-        response = requests.get(f"{BASE_URL}/health", timeout=5)
+        response = requests.get(f"{BASE_URL}/api/v1/health", timeout=5)
         if response.status_code == 200:
             print(f"{Colors.GREEN}✅ Server is running{Colors.RESET}")
         else:

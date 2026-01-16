@@ -3,9 +3,9 @@ Azure OpenAI Integration with LangChain
 Handles all AI-powered architecture generation
 """
 from langchain_openai import AzureChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from langchain.output_parsers import PydanticOutputParser
-from langchain.schema import SystemMessage, HumanMessage
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.messages import SystemMessage, HumanMessage
 from core.config import settings
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
