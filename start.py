@@ -227,7 +227,7 @@ def main():
     print()
     print_info("Useful URLs:")
     print(f"  {Colors.CYAN}API Docs:{Colors.END}  http://localhost:8000/docs")
-    print(f"  {Colors.CYAN}Health:{Colors.END}    http://localhost:8000/health")
+    print(f"  {Colors.CYAN}Health:{Colors.END}    http://localhost:8000/api/v1/health")
     print()
     print_info("Commands:")
     print(f"  {Colors.CYAN}Check status:{Colors.END} python start.py --status")
