@@ -6,7 +6,7 @@ import os
 # Add parent to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from mcp.tools import MCPTools
+from mcp_server.tools import MCPTools
 
 # Create MCP server
 mcp = FastMCP("Nexarch Architecture Intelligence")

@@ -154,6 +154,49 @@ async def ingest_architecture_discovery(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/architecture-discoveries")
+async def get_architecture_discoveries(
+    tenant_id: str = Depends(get_tenant_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve all architecture discoveries for a tenant.
+    Returns the auto-discovered architecture data from SDK.
+    """
+    try:
+        from db.models import ArchitectureDiscovery
+        import json
+        
+        discoveries = db.query(ArchitectureDiscovery).filter(
+            ArchitectureDiscovery.tenant_id == tenant_id
+        ).order_by(ArchitectureDiscovery.discovered_at.desc()).all()
+        
+        result = []
+        for disc in discoveries:
+            result.append({
+                "id": disc.id,
+                "service_name": disc.service_name,
+                "service_type": disc.service_type,
+                "version": disc.version,
+                "endpoints": json.loads(disc.endpoints) if disc.endpoints else [],
+                "databases": json.loads(disc.databases) if disc.databases else [],
+                "external_services": json.loads(disc.external_services) if disc.external_services else [],
+                "middleware": json.loads(disc.middleware) if disc.middleware else [],
+                "architecture_patterns": json.loads(disc.architecture_patterns) if disc.architecture_patterns else {},
+                "discovered_at": disc.discovered_at.isoformat() if disc.discovered_at else None,
+                "updated_at": disc.updated_at.isoformat() if disc.updated_at else None
+            })
+        
+        return {
+            "total": len(result),
+            "discoveries": result
+        }
+    
+    except Exception as e:
+        logger.error(f"Failed to retrieve discoveries for tenant {tenant_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/ingest/stats")
 async def get_ingest_stats(
     tenant_id: str = Depends(get_tenant_id),
@@ -170,3 +213,4 @@ async def get_ingest_stats(
     }
     
     return stats
+

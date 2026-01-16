@@ -87,9 +87,5 @@ class WorkflowGenerator:
             workflows = self.pipeline.run(G)
             logger.info(f"Generated {len(workflows)} workflows via LangGraph for tenant {tenant_id}")
             return workflows
-            # Fallback to LangGraph only
-            G = GraphService.get_graph_from_db(db, tenant_id)
-            workflows = self.pipeline.run(G)
-            logger.info(f"Generated {len(workflows)} workflows via LangGraph for tenant {tenant_id}")
-            return workflows
+
 

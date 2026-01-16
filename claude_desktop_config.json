@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "nexarch": {
+      "command": "python",
+      "args": ["C:\\Users\\Resume\\Documents\\GitHub\\Nexarch\\start_mcp.py"],
+      "env": {}
+    }
+  }
+}
