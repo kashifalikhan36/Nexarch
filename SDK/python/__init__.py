@@ -1,7 +1,3 @@
-"""
-Nexarch SDK for FastAPI - Runtime Architecture Intelligence
-"""
-
 from .client import NexarchSDK
 from .middleware import NexarchMiddleware
 from .models import SpanData, ErrorData

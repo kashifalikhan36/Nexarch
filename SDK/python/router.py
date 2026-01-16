@@ -1,6 +1,4 @@
-"""
-Nexarch Internal Router - Automatically injected SDK management endpoints
-"""
+"""Nexarch Router"""
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from .loggers import NexarchLogger
@@ -11,9 +9,7 @@ nexarch_router = APIRouter()
 
 @nexarch_router.get("/health")
 async def health_check():
-    """
-    Check if Nexarch SDK is running.
-    """
+    """SDK health"""
     return {
         "status": "healthy",
         "service": "nexarch-sdk",
@@ -21,13 +17,10 @@ async def health_check():
     }
 
 
+@nexarch_router.get("/log_fetch")
 @nexarch_router.get("/telemetry")
 async def get_telemetry():
-    """
-    Retrieve all collected telemetry data.
-    
-    Returns all spans, errors, and metrics collected locally.
-    """
+    """Get all telemetry"""
     logs = NexarchLogger.get_all_logs()
     
     return {
