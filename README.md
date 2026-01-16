@@ -186,6 +186,82 @@ Output: Quantitative comparison matrix with recommendation scoring.
 - Privacy-focused data collection
 - Compliance-ready architecture
 
+## Platform Overview
+
+Nexarch provides a Next.js-based web platform for centralized architecture intelligence and observability.
+
+### Account and Project Management
+
+**Getting Started:**
+
+1. Create an account on the Nexarch platform
+2. Set up a new project for your application
+3. Generate API credentials and SDK integration endpoints
+4. Configure SDK in your application using provided API key
+5. View your application in the platform dashboard once SDK begins transmitting data
+
+### Dashboard Capabilities
+
+Once your application is integrated, the platform provides:
+
+**Real-Time Architecture Visibility:**
+
+- Live dependency graph showing all services, databases, and external APIs
+- Current architecture diagram with component relationships
+- Request flow visualization through your system
+- Service health status and availability metrics
+
+**Performance Analytics:**
+
+- Backend server performance metrics (latency, throughput, error rates)
+- Endpoint-level performance breakdown
+- Database query performance analysis
+- Resource utilization trends
+- Bottleneck identification with severity scoring
+
+**Issue Detection and Monitoring:**
+
+- Active error tracking with frequency and impact analysis
+- Performance degradation alerts
+- Architectural anti-pattern detection
+- Single point of failure identification
+- Scalability constraint warnings
+
+**Architecture Optimization:**
+
+The platform generates 3-4 alternative architecture workflows optimized for different objectives:
+
+1. **Minimal Change Workflow**: Incremental improvements with low migration risk
+2. **High Performance Workflow**: Optimized for throughput and latency reduction
+3. **Cost-Optimized Workflow**: Resource efficiency and operational cost reduction
+4. **Future-Scale Workflow**: Designed for long-term growth and scalability
+
+Each proposed workflow includes:
+
+- Visual architecture diagram showing proposed changes
+- Technology stack recommendations (caching layers, message queues, service decomposition, database optimization)
+- Detailed comparison with current architecture across multiple dimensions:
+  - **Performance Impact**: Expected latency improvements, throughput capacity increase
+  - **Cost Analysis**: Infrastructure cost delta, operational overhead changes
+  - **Scalability**: Growth capacity, horizontal scaling readiness
+  - **Complexity**: Implementation effort, migration risk assessment, team skill requirements
+  - **Reliability**: Fault tolerance improvements, resilience patterns
+- Pros and cons for each technology choice
+- Migration path with step-by-step implementation guidance
+- Risk assessment and mitigation strategies
+
+**Intelligent Recommendations:**
+
+The platform analyzes your specific application characteristics to recommend the optimal architecture:
+
+- Pattern-matched against industry best practices
+- Considers your traffic patterns, data access patterns, and scaling requirements
+- Suggests specific technologies and architectural patterns (microservices decomposition, event-driven architecture, CQRS, caching strategies)
+- Prioritizes recommendations by impact and implementation feasibility
+- Provides rationale for each suggestion based on observed behavior
+
+The platform's goal is to identify the architecture that makes your application scalable, resilient, and maintainable while balancing implementation complexity and business constraints.
+
 ## Installation
 
 ### Prerequisites
@@ -235,15 +311,18 @@ sdk.start()
 
 ## Usage
 
-### Basic Workflow
+### Complete Workflow
 
-1. Install and initialize SDK in your application
-2. Allow SDK to observe production traffic (2-3 hours minimum)
-3. Access Nexarch dashboard to view results
-4. Review current architecture analysis
-5. Explore generated workflow alternatives
-6. Compare options using provided metrics
-7. Export implementation guide for selected workflow
+1. **Platform Setup**: Create account on Nexarch platform and set up your project
+2. **Generate Credentials**: Obtain API key and SDK integration endpoints from platform
+3. **SDK Integration**: Install and initialize SDK in your application with provided credentials
+4. **Observation Period**: Allow SDK to observe production traffic (2-3 hours minimum recommended)
+5. **Dashboard Access**: View your application in the platform as data begins flowing
+6. **Architecture Analysis**: Review current architecture visualization, performance metrics, and detected issues
+7. **Workflow Exploration**: Explore 3-4 generated architecture alternatives with detailed comparisons
+8. **Technology Comparison**: Analyze pros/cons of different tech stack options for your use case
+9. **Decision Support**: Review platform recommendations and optimization suggestions
+10. **Implementation**: Export detailed implementation guide for your selected architecture workflow
 
 ### API Access
 
@@ -263,13 +342,44 @@ GET /api/v1/workflows/comparison
 GET /api/v1/workflows/{workflow_id}/implementation
 ```
 
-### Dashboard Features
+### Platform Dashboard Features
 
-- Real-time architecture visualization
-- Interactive dependency graphs
-- Performance metric dashboards
-- Workflow comparison interface
-- Export capabilities (PDF, JSON, diagrams)
+**Project Management:**
+
+- Multi-application support with project organization
+- Team collaboration and role-based access control
+- Environment separation (production, staging, development)
+
+**Visualization and Analytics:**
+
+- Real-time architecture visualization with live updates
+- Interactive dependency graphs with drill-down capabilities
+- Performance metric dashboards with customizable time ranges
+- Error rate tracking with historical trends
+- Endpoint performance heatmaps
+- Service health scorecards
+
+**Architecture Intelligence:**
+
+- Current architecture overview with component inventory
+- Detected issues and bottlenecks with severity levels
+- Side-by-side workflow comparison interface
+- Technology stack analysis with adoption recommendations
+- Scalability assessment scores
+
+**Recommendations Engine:**
+
+- Prioritized optimization suggestions based on impact
+- Best-fit architecture recommendation with justification
+- Migration complexity scoring
+- Cost-benefit analysis for proposed changes
+
+**Export and Integration:**
+
+- Export capabilities (PDF reports, JSON data, architecture diagrams)
+- Implementation guides with code snippets
+- Webhook notifications for critical issues
+- API access for programmatic integration
 
 ## Use Cases
 
@@ -315,27 +425,47 @@ Quantify architectural issues and prioritize improvements based on measured impa
 
 ## Technical Architecture
 
-### SDK Components
+### SDK Workflow
+
+The Nexarch SDK operates through instrumentation and telemetry collection:
+
+![SDK Workflow](sdk-working.png)
+
+**SDK Components:**
 
 - **Request Interceptor**: Captures HTTP request/response metadata
-- **Dependency Tracer**: Tracks downstream service and database calls
-- **Metric Collector**: Aggregates performance and error data
+- **Dependency Tracer**: Tracks downstream service and database calls through library-level hooks
+- **Span Generator**: Creates OpenTelemetry-compatible spans with trace correlation
+- **Local Buffer**: Temporarily stores spans in memory before batch export
 - **Data Sanitizer**: Ensures sensitive information is never transmitted
+- **Exporter**: Sends sanitized spans via HTTP/OTLP to ingestion API
 
-### Platform Components
+The SDK integrates as middleware in FastAPI, Django, Flask, or other frameworks, hooking into the request lifecycle to capture timing, error, and dependency information without blocking application logic.
 
-- **Ingestion API**: FastAPI endpoints for SDK data collection with async processing
-- **Span Processor**: Validates and stores distributed tracing spans
-- **Dependency Graph Engine**: Converts spans into architecture graph with nodes and weighted edges
-- **Pattern Recognition**: Rule-based detection of architectural issues (deep call chains, bottlenecks, SPOFs)
+### Platform Architecture
+
+The backend processes spans through multiple analysis stages:
+
+![Backend Architecture](beckned-server.png)
+
+**Platform Components:**
+
+- **Ingestion API**: FastAPI endpoints for SDK data collection with validation layer
+- **Raw Span Storage**: Persistent storage for all received telemetry data
+- **Async Processing Queue**: Decouples ingestion from analysis for scalability
+- **Span Processor**: Groups and builds dependency graphs from correlated spans
+- **Dependency Graph Builder**: Constructs service graph with weighted edges
+- **Architecture Reconstruction Engine**: Analyzes graph to identify patterns and architecture style
+- **Rule-based Pattern Detection**: Applies algorithmic rules to detect issues (deep call chains, bottlenecks, SPOFs)
 - **Workflow Generator**: Template-based architecture pattern recommendations with optimization scoring
 - **Comparison Engine**: Multi-dimensional workflow evaluation system with cost and complexity modeling
-- **Visualization Service**: Architecture diagram and dashboard generation from graph data
+- **REST API Layer**: Exposes all analysis results via JSON endpoints
+- **Visualization Service**: Generates architecture diagrams and comparison reports
 
 ### Data Flow
 
 ```
-SDK (Runtime) → Ingestion API → Analysis Engine → Workflow Generator → Comparison Engine → Dashboard/API
+SDK (Runtime) → Ingestion API → Raw Storage → Async Queue → Processing Engine → Analysis Engine → Workflow Generator → Comparison Engine → REST API → Dashboard/Client
 ```
 
 ## Security and Privacy
