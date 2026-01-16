@@ -10,9 +10,12 @@ logger = get_logger(__name__)
 class MetricsService:
     
     @staticmethod
-    def compute_node_metrics(db: Session, service_name: str) -> Dict[str, Any]:
-        """Compute metrics for node"""
-        spans = db.query(Span).filter(Span.service_name == service_name).all()
+    def compute_node_metrics(db: Session, service_name: str, tenant_id: str) -> Dict[str, Any]:
+        """Compute metrics for node with tenant isolation"""
+        spans = db.query(Span).filter(
+            Span.tenant_id == tenant_id,
+            Span.service_name == service_name
+        ).all()
         
         if not spans:
             return {
@@ -32,9 +35,10 @@ class MetricsService:
         }
     
     @staticmethod
-    def compute_edge_metrics(db: Session, source: str, target: str) -> Dict[str, Any]:
-        """Compute metrics for edge"""
+    def compute_edge_metrics(db: Session, source: str, target: str, tenant_id: str) -> Dict[str, Any]:
+        """Compute metrics for edge with tenant isolation"""
         spans = db.query(Span).filter(
+            Span.tenant_id == tenant_id,
             Span.service_name == source,
             Span.downstream == target
         ).all()
@@ -57,9 +61,11 @@ class MetricsService:
         }
     
     @staticmethod
-    def compute_global_metrics(db: Session) -> Dict[str, Any]:
-        """Compute global summary"""
-        total_spans = db.query(func.count(Span.id)).scalar()
+    def compute_global_metrics(db: Session, tenant_id: str) -> Dict[str, Any]:
+        """Compute global summary with tenant isolation"""
+        total_spans = db.query(func.count(Span.id)).filter(
+            Span.tenant_id == tenant_id
+        ).scalar()
         
         if not total_spans:
             return {
@@ -69,7 +75,7 @@ class MetricsService:
                 "error_rate": 0.0
             }
         
-        all_spans = db.query(Span).all()
+        all_spans = db.query(Span).filter(Span.tenant_id == tenant_id).all()
         unique_services = len(set(s.service_name for s in all_spans))
         error_count = sum(1 for s in all_spans if s.error or (s.status_code and s.status_code >= 500))
         avg_latency = sum(s.latency_ms for s in all_spans) / total_spans

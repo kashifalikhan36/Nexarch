@@ -45,19 +45,10 @@ class WorkflowReasoningPipeline:
         workflow.add_edge("classify_issues", "analyze_graph")
         workflow.add_edge("analyze_graph", "select_strategies")
         
-        # Conditional branching
-        workflow.add_conditional_edges(
-            "select_strategies",
-            self._route_generation,
-            {
-                "all": ["generate_minimal", "generate_performance", "generate_cost"],
-                "minimal_only": ["generate_minimal"],
-                "end": END
-            }
-        )
-        
-        workflow.add_edge("generate_minimal", "finalize")
-        workflow.add_edge("generate_performance", "finalize")
+        # Simple sequential workflow generation (not parallel)
+        workflow.add_edge("select_strategies", "generate_minimal")
+        workflow.add_edge("generate_minimal", "generate_performance")
+        workflow.add_edge("generate_performance", "generate_cost")
         workflow.add_edge("generate_cost", "finalize")
         workflow.add_edge("finalize", END)
         

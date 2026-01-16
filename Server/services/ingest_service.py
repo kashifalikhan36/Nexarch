@@ -9,9 +9,10 @@ logger = get_logger(__name__)
 class IngestService:
     
     @staticmethod
-    def store_span(db: Session, span_data: SpanIngest) -> DBSpan:
-        """Store span in DB"""
+    def store_span(db: Session, span_data: SpanIngest, tenant_id: str) -> DBSpan:
+        """Store span in DB with tenant isolation"""
         span = DBSpan(
+            tenant_id=tenant_id,
             trace_id=span_data.trace_id,
             span_id=span_data.span_id,
             parent_span_id=span_data.parent_span_id,
@@ -30,5 +31,5 @@ class IngestService:
         db.commit()
         db.refresh(span)
         
-        logger.info(f"Stored span: {span.span_id}")
+        logger.info(f"Stored span: {span.span_id} for tenant: {tenant_id}")
         return span

@@ -3,8 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from core.config import get_settings
 from core.logging import setup_logging, get_logger
+from core.rate_limit import RateLimitMiddleware
 from db.base import engine, Base
-from api import ingest, architecture, workflows, health
+from api import ingest, architecture, workflows, health, admin, dashboard, ai_design, system, demo
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -16,7 +17,7 @@ async def lifespan(app: FastAPI):
     setup_logging(settings.DEBUG)
     logger.info("Creating database tables")
     Base.metadata.create_all(bind=engine)
-    logger.info(f"{settings.APP_NAME} started")
+    logger.info(f"{settings.APP_NAME} started - Multi-tenant mode")
     yield
     logger.info(f"{settings.APP_NAME} shutdown")
 
@@ -24,7 +25,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    lifespan=lifespan
+    lifespan=lifespan,
+    description="Nexarch - Multi-tenant Architecture Intelligence Platform"
 )
 
 # CORS
@@ -36,8 +38,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Rate limiting
+app.add_middleware(RateLimitMiddleware)
+
 # Register routes
 app.include_router(health.router)
+app.include_router(system.router)  # System info and statistics
+app.include_router(demo.router)  # Demo/test endpoints for sample data
+app.include_router(admin.router)  # Admin routes for tenant management
+app.include_router(dashboard.router)  # Dashboard endpoints with AI features
+app.include_router(ai_design.router)  # AI-powered architecture design (THE CRAZY STUFF!)
 app.include_router(ingest.router)
 app.include_router(architecture.router)
 app.include_router(workflows.router)
@@ -49,7 +59,13 @@ async def root():
     return {
         "service": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "status": "running"
+        "status": "running",
+        "features": {
+            "multi_tenant": True,
+            "rate_limiting": True,
+            "caching": True,
+            "authentication": "API Key"
+        }
     }
 
 

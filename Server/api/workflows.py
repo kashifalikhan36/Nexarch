@@ -8,6 +8,8 @@ from services.workflow_generator import WorkflowGenerator
 from services.issue_detector import IssueDetector
 from datetime import datetime
 from core.logging import get_logger
+from core.auth import get_tenant_id
+from core.cache import cache_manager
 
 class WorkflowsResponse(BaseModel):
     workflows: List[Workflow]
@@ -23,24 +25,42 @@ logger = get_logger(__name__)
 
 
 @router.get("/generated", response_model=WorkflowsResponse)
-async def get_generated_workflows(db: Session = Depends(get_db)):
-    """Get generated workflows"""
-    issues = IssueDetector.detect_issues(db)
-    generator = WorkflowGenerator()
-    workflows = generator.generate_workflows(db, issues)
+async def get_generated_workflows(
+    tenant_id: str = Depends(get_tenant_id),
+    db: Session = Depends(get_db)
+):
+    """Get generated workflows with tenant isolation and caching"""
+    # Check cache
+    cached = cache_manager.get(tenant_id, "workflows")
+    if cached:
+        logger.info(f"Returning cached workflows for tenant {tenant_id}")
+        return WorkflowsResponse(**cached)
     
-    return WorkflowsResponse(
-        workflows=workflows,
-        generated_at=datetime.utcnow().isoformat()
-    )
+    # Generate workflows
+    issues = IssueDetector.detect_issues(db, tenant_id)
+    generator = WorkflowGenerator()
+    workflows = generator.generate_workflows(db, issues, tenant_id)
+    
+    response_data = {
+        "workflows": workflows,
+        "generated_at": datetime.utcnow().isoformat()
+    }
+    
+    # Cache result
+    cache_manager.set(tenant_id, "workflows", response_data)
+    
+    return WorkflowsResponse(**response_data)
 
 
 @router.get("/comparison", response_model=WorkflowComparison)
-async def get_workflow_comparison(db: Session = Depends(get_db)):
-    """Compare workflows"""
-    issues = IssueDetector.detect_issues(db)
+async def get_workflow_comparison(
+    tenant_id: str = Depends(get_tenant_id),
+    db: Session = Depends(get_db)
+):
+    """Compare workflows with tenant isolation"""
+    issues = IssueDetector.detect_issues(db, tenant_id)
     generator = WorkflowGenerator()
-    workflows = generator.generate_workflows(db, issues)
+    workflows = generator.generate_workflows(db, issues, tenant_id)
     
     # Build comparison matrix
     comparison = {
@@ -50,10 +70,14 @@ async def get_workflow_comparison(db: Session = Depends(get_db)):
     }
     
     # Simple recommendation
-    recommendation = min(workflows, key=lambda w: w.complexity_score + w.risk_score).name
+    if workflows:
+        recommendation = min(workflows, key=lambda w: w.complexity_score + w.risk_score).name
+        rec_message = f"{recommendation} is recommended for balanced risk/complexity"
+    else:
+        rec_message = "No workflows available"
     
     return WorkflowComparison(
         workflows=workflows,
-        recommendation=f"{recommendation} is recommended for balanced risk/complexity",
+        recommendation=rec_message,
         comparison_matrix=comparison
     )

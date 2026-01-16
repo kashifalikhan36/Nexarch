@@ -13,9 +13,9 @@ logger = get_logger(__name__)
 class GraphService:
     
     @staticmethod
-    def build_graph(db: Session) -> Tuple[List[Node], List[Edge]]:
-        """Build dependency graph"""
-        spans = db.query(Span).all()
+    def build_graph(db: Session, tenant_id: str) -> Tuple[List[Node], List[Edge]]:
+        """Build dependency graph with tenant isolation"""
+        spans = db.query(Span).filter(Span.tenant_id == tenant_id).all()
         
         if not spans:
             return [], []
@@ -48,7 +48,7 @@ class GraphService:
         # Build response
         nodes = []
         for node_id in G.nodes():
-            metrics = MetricsService.compute_node_metrics(db, node_id)
+            metrics = MetricsService.compute_node_metrics(db, node_id, tenant_id)
             nodes.append(Node(
                 id=node_id,
                 type=G.nodes[node_id]["type"],
@@ -57,14 +57,14 @@ class GraphService:
         
         edges = []
         for source, target in G.edges():
-            metrics = MetricsService.compute_edge_metrics(db, source, target)
+            metrics = MetricsService.compute_edge_metrics(db, source, target, tenant_id)
             edges.append(Edge(
                 source=source,
                 target=target,
                 **metrics
             ))
         
-        logger.info(f"Built graph: {len(nodes)} nodes, {len(edges)} edges")
+        logger.info(f"Built graph for tenant {tenant_id}: {len(nodes)} nodes, {len(edges)} edges")
         return nodes, edges
     
     @staticmethod
@@ -81,9 +81,9 @@ class GraphService:
         return "service"
     
     @staticmethod
-    def get_graph_from_db(db: Session) -> nx.DiGraph:
-        """Get NetworkX graph"""
-        nodes, edges = GraphService.build_graph(db)
+    def get_graph_from_db(db: Session, tenant_id: str) -> nx.DiGraph:
+        """Get NetworkX graph with tenant isolation"""
+        nodes, edges = GraphService.build_graph(db, tenant_id)
         
         G = nx.DiGraph()
         for node in nodes:
