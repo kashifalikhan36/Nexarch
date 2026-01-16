@@ -39,9 +39,9 @@ async def get_generated_workflows(
         return WorkflowsResponse(**cached)
     
     # Generate workflows
-    issues = IssueDetector.detect_issues(db, tenant_id)
+    issues = await IssueDetector.detect_issues(db, tenant_id)
     generator = WorkflowGenerator()
-    workflows = generator.generate_workflows(db, issues, tenant_id)
+    workflows = await generator.generate_workflows_with_ai(db, issues, tenant_id)
     
     response_data = {
         "workflows": workflows,
@@ -60,9 +60,9 @@ async def get_workflow_comparison(
     db: Session = Depends(get_db)
 ):
     """Compare workflows with tenant isolation"""
-    issues = IssueDetector.detect_issues(db, tenant_id)
+    issues = await IssueDetector.detect_issues(db, tenant_id)
     generator = WorkflowGenerator()
-    workflows = generator.generate_workflows(db, issues, tenant_id)
+    workflows = await generator.generate_workflows_with_ai(db, issues, tenant_id)
     
     # Build comparison matrix
     comparison = {

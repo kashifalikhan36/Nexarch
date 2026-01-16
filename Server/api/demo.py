@@ -65,14 +65,14 @@ async def generate_sample_data(
             span_id=str(uuid.uuid4()),
             parent_span_id=None,
             service_name=service,
-            operation_name=operation,
+            operation=operation,
             kind="server",
             start_time=timestamp,
+            end_time=timestamp + timedelta(milliseconds=latency),
             latency_ms=latency,
             status_code=status_code,
-            error=error,
-            tags=f'{{"method": "{operation.split()[0]}", "path": "{operation.split()[1]}"}}',
-            metadata="{}"
+            error=str(error) if error else None,
+            downstream=None
         )
         
         db.add(span)
@@ -193,14 +193,14 @@ async def apply_scenario(
             span_id=str(uuid.uuid4()),
             parent_span_id=None,
             service_name=service,
-            operation_name=operation,
+            operation=operation,
             kind="server",
             start_time=timestamp,
+            end_time=timestamp + timedelta(milliseconds=latency),
             latency_ms=latency,
             status_code=status_code,
-            error=(status_code >= 400),
-            tags=f'{{"scenario": "{scenario_name}"}}',
-            metadata="{}"
+            error="Error" if status_code >= 400 else None,
+            downstream=None
         )
         
         db.add(span)

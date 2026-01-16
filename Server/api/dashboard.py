@@ -88,7 +88,7 @@ async def get_dashboard_overview(
     # Build graph
     nodes, edges = GraphService.build_graph(db, tenant_id)
     metrics = MetricsService.compute_global_metrics(db, tenant_id)
-    issues = IssueDetector.detect_issues(db, tenant_id)
+    issues = await IssueDetector.detect_issues(db, tenant_id)
     
     # Calculate health score (0-100)
     health_score = 100
@@ -215,6 +215,22 @@ async def get_services(
     return services
 
 
+@router.get("/services/{service_name}/metrics")
+async def get_service_metrics(
+    service_name: str,
+    tenant_id: str = Depends(get_tenant_id),
+    db: Session = Depends(get_db)
+):
+    """Get metrics for a specific service"""
+    nodes, edges = GraphService.build_graph(db, tenant_id)
+    node = next((n for n in nodes if n.id == service_name), None)
+    
+    if not node:
+        raise HTTPException(status_code=404, detail="Service not found")
+        
+    return node.metrics
+
+
 @router.get("/trends")
 async def get_trends(
     tenant_id: str = Depends(get_tenant_id),
@@ -279,8 +295,19 @@ async def get_trends(
         "latency": latency_trends,
         "error_rate": error_trends,
         "volume": volume_trends,
-        "period_hours": hours
+        "period_hours": hours,
+        "timeline": volume_trends  # Alias for timeline compatibility
     }
+
+
+@router.get("/traces/timeline")
+async def get_trace_timeline(
+    tenant_id: str = Depends(get_tenant_id),
+    db: Session = Depends(get_db),
+    hours: int = Query(default=24, ge=1, le=168)
+):
+    """Get trace volume timeline (alias for trends)"""
+    return await get_trends(tenant_id, db, hours)
 
 
 @router.get("/insights")
@@ -404,7 +431,7 @@ async def get_system_health(
     """
     nodes, edges = GraphService.build_graph(db, tenant_id)
     metrics = MetricsService.compute_global_metrics(db, tenant_id)
-    issues = IssueDetector.detect_issues(db, tenant_id)
+    issues = await IssueDetector.detect_issues(db, tenant_id)
     G = GraphService.get_graph_from_db(db, tenant_id)
     analysis = GraphAnalysis.analyze_architecture(G)
     
@@ -558,7 +585,7 @@ async def generate_workflow_alternatives(
     try:
         # Get current architecture
         nodes, edges = GraphService.build_graph(db, tenant_id)
-        issues = IssueDetector.detect_issues(db, tenant_id)
+        issues = await IssueDetector.detect_issues(db, tenant_id)
         G = GraphService.get_graph_from_db(db, tenant_id)
         analysis = GraphAnalysis.analyze_architecture(G)
         
@@ -651,7 +678,7 @@ async def get_ai_architecture_recommendations(
     try:
         # Get current architecture
         nodes, edges = GraphService.build_graph(db, tenant_id)
-        issues = IssueDetector.detect_issues(db, tenant_id)
+        issues = await IssueDetector.detect_issues(db, tenant_id)
         G = GraphService.get_graph_from_db(db, tenant_id)
         analysis = GraphAnalysis.analyze_architecture(G)
         

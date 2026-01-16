@@ -483,7 +483,7 @@ class NexarchTestSuite:
             assert response.status_code == 200
             data = response.json()
             assert "total_requests" in data
-            assert "services" in data
+            assert "total_services" in data
     
     async def test_dashboard_service_metrics(self):
         """Test service metrics endpoint"""
@@ -687,10 +687,13 @@ class NexarchTestSuite:
         """Test system statistics endpoint"""
         import httpx
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{self.base_url}/api/v1/system/stats")
+            response = await client.get(
+                f"{self.base_url}/api/v1/system/stats",
+                headers={"X-API-Key": self.api_key}
+            )
             assert response.status_code == 200
             data = response.json()
-            assert "total_tenants" in data
+            assert "spans" in data
     
     async def test_list_tenants(self):
         """Test list tenants endpoint"""

@@ -5,8 +5,8 @@ from typing import Optional
 
 class Span(BaseModel):
     trace_id: str = Field(..., min_length=1, max_length=64)
-    span_id: str = Field(..., min_length=1, max_length=32)
-    parent_span_id: Optional[str] = Field(None, max_length=32)
+    span_id: str = Field(..., min_length=1, max_length=64)
+    parent_span_id: Optional[str] = Field(None, max_length=64)
     service_name: str = Field(..., min_length=1, max_length=255)
     operation: str = Field(..., min_length=1, max_length=255)
     kind: str = Field(..., pattern="^(server|client)$")

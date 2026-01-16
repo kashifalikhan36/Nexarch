@@ -43,12 +43,12 @@ class MCPTools:
         finally:
             db.close()
     
-    def get_detected_issues(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
+    async def get_detected_issues(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
         """Get issues with AI enhancement"""
         tenant_id = tenant_id or self.default_tenant_id
         db = self._get_db()
         try:
-            issues = IssueDetector.detect_issues(db, tenant_id)
+            issues = await IssueDetector.detect_issues(db, tenant_id)
             
             # Categorize
             by_severity = {}
@@ -74,13 +74,13 @@ class MCPTools:
         finally:
             db.close()
     
-    def generate_workflows(self, tenant_id: Optional[str] = None, goal: str = "optimize_performance") -> Dict[str, Any]:
+    async def generate_workflows(self, tenant_id: Optional[str] = None, goal: str = "optimize_performance") -> Dict[str, Any]:
         """Generate workflows with AI + LangGraph"""
         tenant_id = tenant_id or self.default_tenant_id
         db = self._get_db()
         try:
-            issues = IssueDetector.detect_issues(db, tenant_id)
-            workflows = self.workflow_generator.generate_workflows(db, issues, tenant_id)
+            issues = await IssueDetector.detect_issues(db, tenant_id)
+            workflows = await self.workflow_generator.generate_workflows_with_ai(db, issues, tenant_id, goal)
             
             return {
                 "tenant_id": tenant_id,
@@ -92,13 +92,13 @@ class MCPTools:
         finally:
             db.close()
     
-    def compare_workflows(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
+    async def compare_workflows(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
         """Compare workflows with intelligent ranking"""
         tenant_id = tenant_id or self.default_tenant_id
         db = self._get_db()
         try:
-            issues = IssueDetector.detect_issues(db, tenant_id)
-            workflows = self.workflow_generator.generate_workflows(db, issues, tenant_id)
+            issues = await IssueDetector.detect_issues(db, tenant_id)
+            workflows = await self.workflow_generator.generate_workflows_with_ai(db, issues, tenant_id)
             
             if not workflows:
                 return {
@@ -141,13 +141,13 @@ class MCPTools:
         finally:
             db.close()
     
-    def explain_decision(self, workflow_id: str, tenant_id: Optional[str] = None) -> Dict[str, Any]:
+    async def explain_decision(self, workflow_id: str, tenant_id: Optional[str] = None) -> Dict[str, Any]:
         """Explain workflow decision with AI reasoning"""
         tenant_id = tenant_id or self.default_tenant_id
         db = self._get_db()
         try:
-            issues = IssueDetector.detect_issues(db, tenant_id)
-            workflows = self.workflow_generator.generate_workflows(db, issues, tenant_id)
+            issues = await IssueDetector.detect_issues(db, tenant_id)
+            workflows = await self.workflow_generator.generate_workflows_with_ai(db, issues, tenant_id)
             
             # Find workflow
             workflow = next((w for w in workflows if w.id == workflow_id), None)

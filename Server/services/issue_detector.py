@@ -70,24 +70,12 @@ class IssueDetector:
         
         return all_issues
     
+    
     @staticmethod
-    def detect_issues(db: Session, tenant_id: str) -> List[Issue]:
-        """Synchronous wrapper - tries AI detection, falls back to rules"""
+    async def detect_issues(db: Session, tenant_id: str) -> List[Issue]:
+        """Detect issues using proper async/await pattern"""
         try:
-            # Try to use existing event loop
-            try:
-                loop = asyncio.get_running_loop()
-                # If we're already in an event loop, create a task
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(
-                        asyncio.run,
-                        IssueDetector.detect_issues_with_ai(db, tenant_id)
-                    )
-                    return future.result(timeout=30)
-            except RuntimeError:
-                # No running loop, we can use asyncio.run
-                return asyncio.run(IssueDetector.detect_issues_with_ai(db, tenant_id))
+            return await IssueDetector.detect_issues_with_ai(db, tenant_id)
         except Exception as e:
             # Fallback to rule-based only
             logger.warning(f"AI detection failed ({e}), falling back to rule-based detection")

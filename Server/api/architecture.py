@@ -67,7 +67,7 @@ async def get_detected_issues(
         return IssuesResponse(**cached)
     
     # Detect issues
-    issues = IssueDetector.detect_issues(db, tenant_id)
+    issues = await IssueDetector.detect_issues(db, tenant_id)
     
     response_data = {
         "issues": issues,
