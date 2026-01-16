@@ -82,13 +82,13 @@ class NexarchTestSuite:
     
     def test_create_tenant(self) -> str:
         """Test tenant creation"""
-        response = self.session.post(f"{BASE_URL}/admin/tenants", json={
+        response = self.session.post(f"{BASE_URL}/api/v1/admin/tenants", json={
             "name": f"Test Tenant {datetime.now().strftime('%H%M%S')}",
-            "email": "test@nexarch.dev"
+            "admin_email": f"test{datetime.now().strftime('%H%M%S')}@nexarch.dev"
         })
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         data = response.json()
-        self.tenant_id = data.get("tenant_id")
+        self.tenant_id = data.get("id")
         self.api_key = data.get("api_key")
         assert self.tenant_id, "No tenant_id returned"
         assert self.api_key, "No api_key returned"
@@ -280,14 +280,36 @@ class NexarchTestSuite:
     
     def test_workflow_generation(self) -> str:
         """Test workflow generation endpoint"""
-        response = self.session.post(
-            f"{BASE_URL}/api/v1/workflows/generate",
+        response = self.session.get(
+            f"{BASE_URL}/api/v1/workflows/generated",
             headers=self.headers()
         )
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
         data = response.json()
         workflows = data.get("workflows", [])
         return f"Workflows: {len(workflows)}"
+    
+    def test_workflow_architecture_graph(self) -> str:
+        """Test workflow architecture graph endpoint (NEW)"""
+        response = self.session.get(
+            f"{BASE_URL}/api/v1/workflows/architecture/graph",
+            headers=self.headers()
+        )
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        data = response.json()
+        
+        # Verify current_architecture exists
+        current = data.get("current_architecture", {})
+        assert "workflow_id" in current, "Missing workflow_id in current_architecture"
+        assert "nodes" in current, "Missing nodes in current_architecture"
+        assert "edges" in current, "Missing edges in current_architecture"
+        assert "tech_stack" in current, "Missing tech_stack in current_architecture"
+        
+        # Verify generated_workflows exists
+        variants = data.get("generated_workflows", [])
+        assert isinstance(variants, list), "generated_workflows should be a list"
+        
+        return f"Current: {len(current.get('nodes', []))} nodes, Variants: {len(variants)}"
     
     # ==================== SYSTEM TESTS ====================
     
@@ -360,6 +382,7 @@ class NexarchTestSuite:
             ]),
             ("⚡ Workflow Generation", [
                 ("Generate Workflows", self.test_workflow_generation),
+                ("Workflow Architecture Graph", self.test_workflow_architecture_graph),
             ]),
             ("⚙️ System", [
                 ("System Stats", self.test_system_stats),
