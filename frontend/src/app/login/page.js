@@ -49,7 +49,7 @@ export default function LoginPage() {
                 <div className="auth-card">
                     {/* Header */}
                     <div className="auth-header">
-                        <Link href="/" className="auth-logo">NEXRCH</Link>
+                        <Link href="/" className="auth-logo">NEXARCH</Link>
                         <span className="tape-label tape-label--rotated">WELCOME BACK</span>
                     </div>
 
@@ -59,7 +59,7 @@ export default function LoginPage() {
                     </h1>
 
                     <p className="auth-subtitle">
-                        Access your system architecture dashboard and AI-powered design tools.
+                        Access your production architecture observability dashboard and AI-powered optimization insights.
                     </p>
 
                     {/* Error Message */}
@@ -106,10 +106,10 @@ export default function LoginPage() {
                         ))}
                     </div>
                     <div className="auth-decoration__text">
-                        <span className="display-title">SYSTEM</span>
-                        <span className="display-title">DESIGN</span>
-                        <span className="display-title">MADE</span>
-                        <span className="display-title">VISUAL</span>
+                        <span className="display-title">PRODUCTION</span>
+                        <span className="display-title">OBSERVABILITY</span>
+                        <span className="display-title">ARCHITECTURE</span>
+                        <span className="display-title">INSIGHTS</span>
                     </div>
                 </div>
             </div>

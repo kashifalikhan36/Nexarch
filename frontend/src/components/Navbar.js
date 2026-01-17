@@ -14,7 +14,7 @@ export default function Navbar() {
 
     return (
         <nav className="navbar">
-            <Link href="/" className="navbar__logo">NEXRCH</Link>
+            <Link href="/" className="navbar__logo">NEXARCH</Link>
 
             <div className="navbar__links">
                 <Link href="/#features" className="navbar__link">Features</Link>

@@ -128,7 +128,7 @@ export default function IngestionPage() {
         <div className="dashboard-page">
             {/* Header */}
             <nav className="dashboard-nav">
-                <Link href="/" className="navbar__logo">NEXRCH</Link>
+                <Link href="/" className="navbar__logo">NEXARCH</Link>
                 <div className="dashboard-nav__links">
                     <Link href="/dashboard">Dashboard</Link>
                     <Link href="/ingestion" className="active">Ingestion</Link>

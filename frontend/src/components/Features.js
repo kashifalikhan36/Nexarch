@@ -1,38 +1,38 @@
 'use client';
 
-import { Boxes, RefreshCw, Layout, Link2, FileText, GitBranch } from 'lucide-react';
+import { Eye, Zap, TrendingUp, BarChart3, Shield, GitBranch } from 'lucide-react';
 
 export default function Features() {
     const features = [
         {
-            icon: Boxes,
-            title: 'Visual Architecture',
-            description: 'Drag-and-drop components to build system diagrams intuitively. From databases to APIs, visualize your entire infrastructure at a glance.'
+            icon: Eye,
+            title: 'Production Observability',
+            description: 'Understand your system from how it actually runs in production. Our lightweight SDK observes live request flows, service connections, and performance behavior without accessing source code or sensitive data.'
         },
         {
-            icon: RefreshCw,
-            title: 'Real-time Collaboration',
-            description: 'Design together with your team in real-time. Comment, annotate, and iterate on architectures simultaneously from anywhere in the world.'
+            icon: Zap,
+            title: 'Automatic Architecture Rebuild',
+            description: 'Automatically rebuild workflow and architectural design based on actual runtime behavior. Get clear visibility into your system\'s real structure and identify bottlenecks instantly.'
         },
         {
-            icon: Layout,
-            title: 'Smart Templates',
-            description: 'Start fast with 500+ battle-tested architecture templates. Microservices, event-driven, serverless — we\'ve got you covered.'
+            icon: TrendingUp,
+            title: 'AI-Powered Design Options',
+            description: 'Generate multiple improved architecture designs with workflow options focused on performance, cost, or low-risk changes. Each option is optimized for your specific system needs.'
         },
         {
-            icon: Link2,
-            title: 'Auto-connections',
-            description: 'Intelligent routing automatically draws clean connections between components. No more manual path adjustments — just focus on design.'
+            icon: BarChart3,
+            title: 'Metric-Based Comparison',
+            description: 'Compare architecture options using clear metrics like speed, reliability, cost, and complexity. Make confident, data-backed decisions faster with actionable insights.'
         },
         {
-            icon: FileText,
-            title: 'Documentation Export',
-            description: 'Generate comprehensive architecture documentation automatically. Export to PDF, Markdown, or integrate directly with Confluence and Notion.'
+            icon: Shield,
+            title: 'Reduce Risk & Manual Analysis',
+            description: 'Lower risk during architectural changes and eliminate manual analysis. Get continuous clarity as your applications evolve, ensuring your system stays production-ready.'
         },
         {
             icon: GitBranch,
-            title: 'Version Control',
-            description: 'Track every change with built-in versioning. Compare revisions, rollback when needed, and maintain a complete history of your designs.'
+            title: 'Workflow Pipeline Insights',
+            description: 'Discover interesting information about your entire architecture and workflow pipelines. Keep your system organized and never get messed up with comprehensive visibility.'
         }
     ];
 
@@ -41,11 +41,11 @@ export default function Features() {
             <div className="features__header">
                 <span className="tape-label">Core Capabilities</span>
                 <h2 className="display-title display-md" style={{ marginTop: '1rem' }}>
-                    ARCHITECT WITH CONFIDENCE
+                    UNDERSTAND YOUR ARCHITECTURE
                 </h2>
                 <p style={{ color: 'var(--color-gray)', marginTop: '1rem', maxWidth: '600px', margin: '1rem auto 0' }}>
-                    Everything you need to design, document, and share system architectures.
-                    Built by engineers, for engineers who think in systems.
+                    Better system visibility platform that reduces manual analysis, lowers risk during changes, 
+                    and provides continuous clarity as applications evolve.
                 </p>
             </div>
 

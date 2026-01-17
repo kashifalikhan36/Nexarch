@@ -49,7 +49,7 @@ export default function SignupPage() {
                 <div className="auth-card">
                     {/* Header */}
                     <div className="auth-header">
-                        <Link href="/" className="auth-logo">NEXRCH</Link>
+                        <Link href="/" className="auth-logo">NEXARCH</Link>
                         <span className="tape-label">JOIN NOW</span>
                     </div>
 
@@ -59,22 +59,22 @@ export default function SignupPage() {
                     </h1>
 
                     <p className="auth-subtitle">
-                        Start designing system architectures with AI-powered tools. Free forever.
+                        Start observing your production architecture and get AI-powered optimization recommendations. Free forever.
                     </p>
 
                     {/* Features */}
                     <div className="auth-features">
                         <div className="auth-feature">
                             <Cpu size={18} />
-                            <span>Visual Architecture Design</span>
+                            <span>Production Observability</span>
                         </div>
                         <div className="auth-feature">
                             <Zap size={18} />
-                            <span>AI-Powered Recommendations</span>
+                            <span>AI-Powered Architecture Insights</span>
                         </div>
                         <div className="auth-feature">
                             <Shield size={18} />
-                            <span>Enterprise-Grade Security</span>
+                            <span>Lightweight SDK Integration</span>
                         </div>
                     </div>
 
@@ -122,10 +122,10 @@ export default function SignupPage() {
                         ))}
                     </div>
                     <div className="auth-decoration__text">
-                        <span className="display-title">DESIGN</span>
-                        <span className="display-title">BUILD</span>
-                        <span className="display-title">SCALE</span>
-                        <span className="display-title">DEPLOY</span>
+                        <span className="display-title">OBSERVE</span>
+                        <span className="display-title">ANALYZE</span>
+                        <span className="display-title">OPTIMIZE</span>
+                        <span className="display-title">EVOLVE</span>
                     </div>
                 </div>
             </div>

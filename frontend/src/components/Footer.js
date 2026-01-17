@@ -6,7 +6,7 @@ export default function Footer() {
     return (
         <footer className="footer">
             <div className="footer__content">
-                <div className="footer__logo">NEXRCH</div>
+                <div className="footer__logo">NEXARCH</div>
 
                 <div className="footer__links">
                     <a href="#features" className="footer__link">Features</a>
@@ -18,7 +18,7 @@ export default function Footer() {
                 </div>
 
                 <p className="footer__copyright">
-                    © {currentYear} NEXRCH. Design systems with confidence. All rights reserved.
+                    © {currentYear} NEXARCH. Understand production architecture with confidence. All rights reserved.
                 </p>
             </div>
         </footer>
