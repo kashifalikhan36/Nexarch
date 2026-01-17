@@ -54,7 +54,7 @@ def start_fastapi_server():
     server_dir = project_root / "Server"
     
     print_info(f"Starting FastAPI server in new terminal...")
-    print_info(f"  Host: 0.0.0.0:8000")
+    print_info(f"  Host: 127.0.0.1:8000")
     print_info(f"  Directory: {server_dir}")
     
     # PowerShell command to start FastAPI
@@ -73,7 +73,7 @@ def start_fastapi_server():
         Write-Host '[OK] Environment variables loaded from .env' -ForegroundColor Green
     }}
     Write-Host '[*] Starting FastAPI Server (Nexarch)...' -ForegroundColor Green
-    Write-Host '    Host: 0.0.0.0:8000' -ForegroundColor Cyan
+    Write-Host '    Host: 127.0.0.1:8000' -ForegroundColor Cyan
     Write-Host '    Press Ctrl+C to stop' -ForegroundColor Yellow
     Write-Host ''
     python main.py
@@ -155,7 +155,7 @@ def check_server_status():
     print_header("Server Status Check")
     
     # Check FastAPI
-    print_info("Checking FastAPI server (0.0.0.0:8000)...")
+    print_info("Checking FastAPI server (127.0.0.1:8000)...")
     try:
         response = requests.get("http://localhost:8000/health", timeout=3)
         if response.status_code == 200:
@@ -222,7 +222,7 @@ def main():
     
     print()
     print_info("Server Information:")
-    print(f"  {Colors.CYAN}FastAPI:{Colors.END} http://0.0.0.0:8000 (accessible from network)")
+    print(f"  {Colors.CYAN}FastAPI:{Colors.END} http://127.0.0.1:8000 (localhost only)")
     print(f"  {Colors.CYAN}MCP:{Colors.END}     127.0.0.1:8001 (localhost only, stdio mode)")
     print()
     print_info("Useful URLs:")
