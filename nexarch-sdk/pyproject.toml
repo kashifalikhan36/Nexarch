@@ -46,7 +46,7 @@ Repository = "https://github.com/nexarch/nexarch-sdk"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["python*"]
+include = ["nexarch*"]
 
 [tool.setuptools.package-data]
-python = ["*.json"]
+nexarch = ["*.json", "py.typed"]
