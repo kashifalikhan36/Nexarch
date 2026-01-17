@@ -26,9 +26,28 @@ class User(Base):
     
     id = Column(String(64), primary_key=True, index=True)
     email = Column(String(255), nullable=False, unique=True, index=True)
-    tenant_id = Column(String(64), ForeignKey("tenants.id"), nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    tenant_id = Column(String(64), ForeignKey("tenants.id"), nullable=True, index=True)
+    full_name = Column(String(255), nullable=True)
+    hashed_password = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    pending_signup = Column(Boolean, default=False)
+    
+    # OAuth fields
+    auth_provider = Column(String(50), default="local")  # "local" or "google"
+    google_id = Column(String(255), nullable=True, unique=True)
+    picture = Column(String(512), nullable=True)
+    
+    # Password reset fields
+    password_reset_token = Column(String(512), nullable=True)
+    password_reset_expires = Column(DateTime, nullable=True)
+    
+    # OTP fields
+    signup_otp = Column(String(10), nullable=True)
+    signup_otp_expires = Column(DateTime, nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     tenant = relationship("Tenant", back_populates="users")
