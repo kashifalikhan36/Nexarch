@@ -45,7 +45,7 @@ function CallbackContent() {
         <div className="auth-page">
             <div className="auth-container">
                 <div className="auth-card" style={{ textAlign: 'center' }}>
-                    <div className="auth-logo">NEXRCH</div>
+                    <div className="auth-logo">NEXARCH</div>
                     <h1 className="auth-title display-title display-md">
                         AUTHENTICATING
                     </h1>

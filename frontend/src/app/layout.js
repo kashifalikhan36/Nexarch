@@ -9,12 +9,12 @@ const inter = Inter({
 });
 
 export const metadata = {
-    title: 'NEXRCH | System Design Made Visual',
-    description: 'Design, visualize, and iterate on complex system architectures with ease. The ultimate platform for engineers who think in systems.',
-    keywords: ['system design', 'architecture', 'diagrams', 'microservices', 'distributed systems', 'engineering'],
+    title: 'NEXARCH | Production Architecture Observability',
+    description: 'Understand your production architecture automatically. Observe live request flows, service connections, and get AI-powered architecture design recommendations based on runtime behavior.',
+    keywords: ['architecture observability', 'production monitoring', 'system analysis', 'request flows', 'microservices', 'distributed systems', 'architecture optimization'],
     openGraph: {
-        title: 'NEXRCH | System Design Made Visual',
-        description: 'Design, visualize, and iterate on complex system architectures with ease.',
+        title: 'NEXARCH | Production Architecture Observability',
+        description: 'Understand your production architecture automatically. Observe live request flows and get data-backed architectural decisions.',
         type: 'website',
     },
 };
