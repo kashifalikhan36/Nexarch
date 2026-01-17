@@ -19,8 +19,7 @@ Complete API reference for all FastAPI endpoints with Next.js integration exampl
 7. [Workflow Generation Endpoints](#workflow-generation-endpoints)
 8. [Admin & Tenant Management](#admin--tenant-management)
 9. [Cache Management Endpoints](#cache-management-endpoints)
-10. [Demo & Testing Endpoints](#demo--testing-endpoints)
-11. [Next.js Integration Guide](#nextjs-integration-guide)
+10. [Next.js Integration Guide](#nextjs-integration-guide)
 
 ---
 
@@ -1468,69 +1467,6 @@ POST /api/v1/cache/warm/{operation}
 
 ---
 
-## Demo & Testing Endpoints
-
-### 1. Generate Sample Data
-```http
-POST /api/v1/demo/generate-sample-data?count=100
-```
-
-**Query Parameters:**
-- `count`: Number of spans to generate (default: 100)
-
-**Response:**
-```json
-{
-  "status": "success",
-  "spans_created": 100,
-  "services": ["api-gateway", "user-service", "order-service", "payment-service", "notification-service"],
-  "time_range": "last 24 hours"
-}
-```
-
-**Next.js:**
-```typescript
-// pages/admin/demo-data.tsx
-export default function DemoData() {
-  const generateData = async (count: number) => {
-    await apiClient.request(`/api/v1/demo/generate-sample-data?count=${count}`, {
-      method: 'POST',
-    });
-    
-    // Refresh dashboard
-    mutate('/api/v1/dashboard/overview');
-  };
-
-  return (
-    <div>
-      <h1>Generate Demo Data</h1>
-      <button onClick={() => generateData(100)}>
-        Generate 100 Spans
-      </button>
-      <button onClick={() => generateData(1000)}>
-        Generate 1000 Spans
-      </button>
-    </div>
-  );
-}
-```
-
-### 2. Clear Data
-```http
-DELETE /api/v1/demo/clear-data
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "deleted_count": 5000,
-  "message": "All data cleared for tenant"
-}
-```
-
----
-
 ## Next.js Integration Guide
 
 ### Complete Integration Example
@@ -1907,7 +1843,7 @@ Future versions will use `/api/v2/`, etc., with backward compatibility.
 3. ✅ Set API key in Next.js `.env.local`
 4. ✅ Install API client: Copy `lib/api-client.ts`
 5. ✅ Test connection: `GET /api/v1/health`
-6. ✅ Generate demo data: `POST /api/v1/demo/generate-sample-data?count=100`
+6. ✅ Start ingesting telemetry data: `POST /api/v1/ingest`
 7. ✅ View dashboard: `GET /api/v1/dashboard/overview`
 8. ✅ Explore architecture: `GET /api/v1/dashboard/architecture-map`
 9. ✅ Get AI insights: `GET /api/v1/dashboard/insights`

@@ -6,7 +6,7 @@ from core.logging import setup_logging, get_logger
 from core.rate_limit import RateLimitMiddleware
 from core.cache import init_cache
 from db.base import engine, Base
-from api import ingest, architecture, workflows, health, admin, dashboard, ai_design, system, demo, cache_api
+from api import ingest, architecture, workflows, health, admin, dashboard, ai_design, system, cache_api
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -65,7 +65,6 @@ app.add_middleware(RateLimitMiddleware)
 # Register routes
 app.include_router(health.router)
 app.include_router(system.router)  # System info and statistics
-app.include_router(demo.router)  # Demo/test endpoints for sample data
 app.include_router(cache_api.router)  # Cache management API
 app.include_router(admin.router)  # Admin routes for tenant management
 app.include_router(dashboard.router)  # Dashboard endpoints with AI features
