@@ -65,8 +65,12 @@ class Span:
         """Finish span"""
         self.end_time = datetime.utcnow().isoformat()
         if self.start_time and self.end_time:
-            start = datetime.fromisoformat(self.start_time)
-            end = datetime.fromisoformat(self.end_time)
-            self.latency_ms = (end - start).total_seconds() * 1000
+            try:
+                start = datetime.fromisoformat(self.start_time)
+                end = datetime.fromisoformat(self.end_time)
+                self.latency_ms = (end - start).total_seconds() * 1000
+            except (ValueError, AttributeError) as e:
+                # If datetime parsing fails, set default
+                self.latency_ms = 0.0
         self.status_code = status_code
         self.error = error

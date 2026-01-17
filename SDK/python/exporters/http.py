@@ -28,6 +28,9 @@ class HttpExporter(Exporter):
         Export data via HTTP to Nexarch backend.
         Supports batching for efficiency.
         """
+        if not data:
+            return
+        
         try:
             # Handle different data types
             data_type = data.get('type', 'span')

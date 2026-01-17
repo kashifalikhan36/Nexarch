@@ -2,8 +2,9 @@
 import time
 import traceback
 import uuid
+import threading
 from datetime import datetime
-from typing import Callable, Optional, Dict, Any
+from typing import Callable, Optional
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -22,6 +23,7 @@ class NexarchMiddleware(BaseHTTPMiddleware):
     _dependency_mapper: DependencyMapper = DependencyMapper()
     _traffic_analyzer: TrafficAnalyzer = TrafficAnalyzer()
     _discovery_sent: bool = False
+    _discovery_lock: threading.Lock = threading.Lock()
     
     def __init__(
         self,
@@ -47,21 +49,22 @@ class NexarchMiddleware(BaseHTTPMiddleware):
     
     def _run_discovery(self):
         """Run architecture auto-discovery and send to backend"""
-        try:
-            if NexarchMiddleware._discovery and not NexarchMiddleware._discovery_sent:
-                discovery_data = NexarchMiddleware._discovery.discover_all()
-                
-                # Enqueue discovery data
-                get_log_queue().enqueue({
-                    "type": "architecture_discovery",
-                    "timestamp": datetime.now().isoformat(),
-                    "data": discovery_data
-                })
-                
-                NexarchMiddleware._discovery_sent = True
-                print(f"[Nexarch] Architecture discovery completed: {len(discovery_data.get('endpoints', []))} endpoints discovered")
-        except Exception as e:
-            print(f"[Nexarch] Warning: Architecture discovery failed: {e}")
+        with NexarchMiddleware._discovery_lock:
+            try:
+                if NexarchMiddleware._discovery and not NexarchMiddleware._discovery_sent:
+                    discovery_data = NexarchMiddleware._discovery.discover_all()
+                    
+                    # Enqueue discovery data
+                    get_log_queue().enqueue({
+                        "type": "architecture_discovery",
+                        "timestamp": datetime.now().isoformat(),
+                        "data": discovery_data
+                    })
+                    
+                    NexarchMiddleware._discovery_sent = True
+                    print(f"[Nexarch] Architecture discovery completed: {len(discovery_data.get('endpoints', []))} endpoints discovered")
+            except Exception as e:
+                print(f"[Nexarch] Warning: Architecture discovery failed: {e}")
     
     async def dispatch(
         self, 
@@ -115,18 +118,19 @@ class NexarchMiddleware(BaseHTTPMiddleware):
             
             # Detect database and external calls from span tags
             downstream_deps = []
-            if span.tags.get("db.statement"):
+            span_tags = span.tags if span.tags else {}
+            if span_tags.get("db.statement"):
                 downstream_deps.append({
                     "type": "database",
-                    "target": span.tags.get("db.system", "unknown"),
-                    "operation": span.tags.get("db.statement", "")[:100]
+                    "target": span_tags.get("db.system", "unknown"),
+                    "operation": span_tags.get("db.statement", "")[:100]
                 })
             
-            if span.tags.get("http.url"):
+            if span_tags.get("http.url"):
                 downstream_deps.append({
                     "type": "external_http",
-                    "target": span.tags.get("http.url", ""),
-                    "method": span.tags.get("http.method", "GET")
+                    "target": span_tags.get("http.url", ""),
+                    "method": span_tags.get("http.method", "GET")
                 })
             
             # Build dependency chain
@@ -147,7 +151,7 @@ class NexarchMiddleware(BaseHTTPMiddleware):
                 "calls_external": len([d for d in downstream_deps if d["type"] == "external_http"]) > 0,
                 "latency_breakdown": {
                     "total_ms": latency_ms,
-                    "downstream_ms": sum(span.tags.get(f"{dep['type']}_latency", 0) for dep in downstream_deps)
+                    "downstream_ms": sum(span_tags.get(f"{dep['type']}_latency", 0) for dep in downstream_deps)
                 }
             }
             

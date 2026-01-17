@@ -23,6 +23,9 @@ class LocalJSONExporter(Exporter):
     
     def export(self, data: Dict[str, Any]):
         """Export to JSON"""
+        if not data:
+            return
+        
         try:
             # Read existing
             with open(self.log_file, 'r') as f:

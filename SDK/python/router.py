@@ -37,6 +37,16 @@ async def get_telemetry_stats():
     """
     logs = NexarchLogger.get_all_logs()
     
+    if not logs:
+        return {
+            "total_requests": 0,
+            "successful_requests": 0,
+            "failed_requests": 0,
+            "error_rate": 0,
+            "average_latency_ms": 0,
+            "collected_at": datetime.utcnow().isoformat()
+        }
+    
     spans = [log for log in logs if log.get("type") == "span"]
     errors = [log for log in logs if log.get("type") == "error"]
     
