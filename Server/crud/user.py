@@ -2,10 +2,11 @@
 CRUD operations for User model
 """
 from typing import Optional
-from db.models import User
+from db.models import User, Tenant
 from db.base import get_db
 from datetime import datetime
 from sqlalchemy.orm import Session
+from core.security import get_password_hash
 import uuid
 
 
@@ -90,9 +91,30 @@ def create_google_user(
         if picture:
             existing_user.picture = picture
         existing_user.updated_at = datetime.utcnow()
+        
+        # Create tenant if missing
+        if not existing_user.tenant_id:
+            tenant_id = str(uuid.uuid4())
+            tenant = Tenant(
+                id=tenant_id,
+                name=f"{full_name or email.split('@')[0]}'s Organization",
+                is_active=True
+            )
+            db.add(tenant)
+            existing_user.tenant_id = tenant_id
+        
         db.commit()
         db.refresh(existing_user)
         return existing_user
+    
+    # Create tenant for new user
+    tenant_id = str(uuid.uuid4())
+    tenant = Tenant(
+        id=tenant_id,
+        name=f"{full_name or email.split('@')[0]}'s Organization",
+        is_active=True
+    )
+    db.add(tenant)
     
     # Create new user
     new_user = User(
@@ -105,7 +127,59 @@ def create_google_user(
         is_active=True,
         is_verified=True,
         pending_signup=False,
-        tenant_id=None,  # No tenant initially for OAuth users
+        tenant_id=tenant_id,
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    return new_user
+
+
+def create_user(
+    email: str,
+    password: str,
+    full_name: Optional[str] = None,
+    db: Session = None,
+) -> User:
+    """
+    Create a new user with email and password
+    
+    Args:
+        email: User email address
+        password: Plain text password (will be hashed)
+        full_name: User's full name
+        db: Database session
+        
+    Returns:
+        User object
+    """
+    if db is None:
+        db = next(get_db())
+    
+    # Hash the password
+    hashed_password = get_password_hash(password)
+    
+    # Create tenant for new user
+    tenant_id = str(uuid.uuid4())
+    tenant = Tenant(
+        id=tenant_id,
+        name=f"{full_name or email.split('@')[0]}'s Organization",
+        is_active=True
+    )
+    db.add(tenant)
+    
+    # Create new user
+    new_user = User(
+        id=str(uuid.uuid4()),
+        email=email.lower(),
+        full_name=full_name or email.split("@")[0],
+        hashed_password=hashed_password,
+        auth_provider="local",
+        is_active=True,
+        is_verified=False,  # Email verification can be added later
+        pending_signup=False,
+        tenant_id=tenant_id,
     )
     db.add(new_user)
     db.commit()

@@ -61,9 +61,17 @@ class NexarchClient {
         });
 
         if (response.status === 401) {
-            this.removeToken();
-            if (typeof window !== 'undefined') {
-                window.location.href = '/login';
+            // Only clear token and redirect if we actually sent a token
+            // This prevents redirect loops on login/signup errors
+            if (token) {
+                this.removeToken();
+                // Only redirect if we're not already on login/signup/auth pages
+                if (typeof window !== 'undefined' && 
+                    !window.location.pathname.startsWith('/login') && 
+                    !window.location.pathname.startsWith('/signup') &&
+                    !window.location.pathname.startsWith('/auth')) {
+                    window.location.href = '/login';
+                }
             }
             throw new Error('Unauthorized');
         }
@@ -79,6 +87,38 @@ class NexarchClient {
     // ============================================
     // AUTH ENDPOINTS
     // ============================================
+
+    // Email/Password Signup
+    async signup(email, password, fullName = null) {
+        const result = await this.request('/auth/signup', {
+            method: 'POST',
+            body: JSON.stringify({
+                email,
+                password,
+                full_name: fullName
+            }),
+        });
+
+        if (result.access_token) {
+            this.setToken(result.access_token);
+        }
+
+        return result;
+    }
+
+    // Email/Password Login
+    async login(email, password) {
+        const result = await this.request('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password }),
+        });
+
+        if (result.access_token) {
+            this.setToken(result.access_token);
+        }
+
+        return result;
+    }
 
     // Get Google OAuth authorization URL
     async getGoogleAuthUrl() {

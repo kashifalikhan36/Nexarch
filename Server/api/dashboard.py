@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from db.base import get_db
 from db.models import Span
-from core.auth import get_tenant_id
+from dependencies.auth import get_tenant_id_from_jwt
 from core.cache import cache_manager
 from core.ai_client import get_ai_client
 from services.graph_service import GraphService
@@ -70,7 +70,7 @@ class InsightData(BaseModel):
 
 @router.get("/overview", response_model=DashboardOverview)
 async def get_dashboard_overview(
-    tenant_id: str = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id_from_jwt),
     db: Session = Depends(get_db)
 ):
     """
@@ -130,7 +130,7 @@ async def get_dashboard_overview(
 
 @router.get("/architecture-map")
 async def get_architecture_map(
-    tenant_id: str = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id_from_jwt),
     db: Session = Depends(get_db)
 ):
     """
@@ -165,7 +165,7 @@ async def get_architecture_map(
 
 @router.get("/services", response_model=List[ServiceDetail])
 async def get_services(
-    tenant_id: str = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id_from_jwt),
     db: Session = Depends(get_db)
 ):
     """
@@ -218,7 +218,7 @@ async def get_services(
 @router.get("/services/{service_name}/metrics")
 async def get_service_metrics(
     service_name: str,
-    tenant_id: str = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id_from_jwt),
     db: Session = Depends(get_db)
 ):
     """Get metrics for a specific service"""
@@ -233,7 +233,7 @@ async def get_service_metrics(
 
 @router.get("/trends")
 async def get_trends(
-    tenant_id: str = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id_from_jwt),
     db: Session = Depends(get_db),
     hours: int = Query(default=24, ge=1, le=168)  # 1 hour to 7 days
 ):
@@ -302,7 +302,7 @@ async def get_trends(
 
 @router.get("/traces/timeline")
 async def get_trace_timeline(
-    tenant_id: str = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id_from_jwt),
     db: Session = Depends(get_db),
     hours: int = Query(default=24, ge=1, le=168)
 ):
@@ -312,7 +312,7 @@ async def get_trace_timeline(
 
 @router.get("/insights")
 async def get_ai_insights(
-    tenant_id: str = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id_from_jwt),
     db: Session = Depends(get_db)
 ):
     """
@@ -423,7 +423,7 @@ async def get_ai_insights(
 
 @router.get("/health")
 async def get_system_health(
-    tenant_id: str = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id_from_jwt),
     db: Session = Depends(get_db)
 ):
     """
@@ -509,7 +509,7 @@ async def get_system_health(
 
 @router.get("/dependencies")
 async def get_dependency_matrix(
-    tenant_id: str = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id_from_jwt),
     db: Session = Depends(get_db)
 ):
     """
@@ -545,7 +545,7 @@ async def get_dependency_matrix(
 
 @router.get("/bottlenecks")
 async def get_bottlenecks(
-    tenant_id: str = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id_from_jwt),
     db: Session = Depends(get_db)
 ):
     """
@@ -567,7 +567,7 @@ async def get_bottlenecks(
 
 @router.get("/workflows")
 async def generate_workflow_alternatives(
-    tenant_id: str = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id_from_jwt),
     db: Session = Depends(get_db),
     goal: str = Query(default="optimize_performance", description="Optimization goal: optimize_performance, reduce_cost, improve_reliability")
 ):
@@ -663,7 +663,7 @@ async def generate_workflow_alternatives(
 
 @router.get("/recommendations")
 async def get_ai_architecture_recommendations(
-    tenant_id: str = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id_from_jwt),
     db: Session = Depends(get_db)
 ):
     """

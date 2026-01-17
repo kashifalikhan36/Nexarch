@@ -90,3 +90,60 @@ def get_current_active_user(
         )
     
     return current_user
+
+
+def get_tenant_id_from_jwt(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
+) -> str:
+    """
+    Get tenant_id from JWT token for dashboard access
+    
+    Args:
+        credentials: HTTP Bearer token credentials
+        db: Database session
+        
+    Returns:
+        tenant_id string
+        
+    Raises:
+        HTTPException: If token is invalid or user has no tenant
+    """
+    token = credentials.credentials
+    
+    # Verify token
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Get user ID from token
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Get user from database
+    from db.models import User
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User has no tenant assigned"
+        )
+    
+    return user.tenant_id
+

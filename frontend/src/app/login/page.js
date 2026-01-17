@@ -1,22 +1,55 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { Chrome } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginContent() {
     const router = useRouter();
-    const { loginWithGoogle, isAuthenticated, loading } = useAuth();
+    const searchParams = useSearchParams();
+    const { loginWithGoogle, loginWithEmail, isAuthenticated, loading } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
 
     useEffect(() => {
         if (!loading && isAuthenticated) {
             router.push('/dashboard');
         }
     }, [isAuthenticated, loading, router]);
+
+    useEffect(() => {
+        // Check for error in URL params
+        const errorParam = searchParams.get('error');
+        if (errorParam) {
+            const errorMessages = {
+                'server_error': 'Server error occurred. Please try again.',
+                'auth_failed': 'Authentication failed. Please try again.',
+                'no_code': 'No authorization code received from Google.',
+                'no_email': 'No email address received from Google.',
+                'http_error': 'HTTP error occurred during authentication.'
+            };
+            setError(errorMessages[errorParam] || 'An error occurred. Please try again.');
+        }
+    }, [searchParams]);
+
+    const handleEmailLogin = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError(null);
+        try {
+            await loginWithEmail(email, password);
+            // Only redirect if successful
+            router.push('/dashboard');
+        } catch (err) {
+            console.error('Login error:', err);
+            setError(err.message || 'Login failed. Please check your credentials.');
+            setIsLoading(false);
+        }
+    };
 
     const handleGoogleLogin = async () => {
         setIsLoading(true);
@@ -69,6 +102,46 @@ export default function LoginPage() {
                         </div>
                     )}
 
+                    {/* Email/Password Form */}
+                    <form onSubmit={handleEmailLogin} className="auth-form">
+                        <div className="form-group">
+                            <label htmlFor="email">Email</label>
+                            <input
+                                type="email"
+                                id="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                disabled={isLoading}
+                                placeholder="you@example.com"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="password">Password</label>
+                            <input
+                                type="password"
+                                id="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                disabled={isLoading}
+                                placeholder="••••••••"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="btn-primary"
+                        >
+                            {isLoading ? 'Signing in...' : 'Sign In'}
+                        </button>
+                    </form>
+
+                    {/* Divider */}
+                    <div className="auth-divider">
+                        <span>OR</span>
+                    </div>
+
                     {/* Google Sign In Button */}
                     <button
                         onClick={handleGoogleLogin}
@@ -114,5 +187,19 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="auth-page">
+                <div className="auth-container">
+                    <div className="auth-loading">Loading...</div>
+                </div>
+            </div>
+        }>
+            <LoginContent />
+        </Suspense>
     );
 }

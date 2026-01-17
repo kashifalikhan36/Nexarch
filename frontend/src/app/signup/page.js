@@ -8,15 +8,36 @@ import { Chrome, Zap, Shield, Cpu } from 'lucide-react';
 
 export default function SignupPage() {
     const router = useRouter();
-    const { loginWithGoogle, isAuthenticated, loading } = useAuth();
+    const { loginWithGoogle, signupWithEmail, isAuthenticated, loading } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [fullName, setFullName] = useState('');
 
     useEffect(() => {
         if (!loading && isAuthenticated) {
             router.push('/dashboard');
         }
     }, [isAuthenticated, loading, router]);
+
+    const handleEmailSignup = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError(null);
+        console.log('Starting signup process...');
+        try {
+            console.log('Calling signupWithEmail...');
+            await signupWithEmail(email, password, fullName);
+            console.log('Signup successful, redirecting to dashboard...');
+            // Only redirect if successful
+            router.push('/dashboard');
+        } catch (err) {
+            console.error('Signup error:', err);
+            setError(err.message || 'Signup failed. Please try again.');
+            setIsLoading(false);
+        }
+    };
 
     const handleGoogleSignup = async () => {
         setIsLoading(true);
@@ -84,6 +105,58 @@ export default function SignupPage() {
                             {error}
                         </div>
                     )}
+
+                    {/* Email/Password Form */}
+                    <form onSubmit={handleEmailSignup} className="auth-form">
+                        <div className="form-group">
+                            <label htmlFor="fullName">Full Name</label>
+                            <input
+                                type="text"
+                                id="fullName"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                disabled={isLoading}
+                                placeholder="John Doe"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="email">Email</label>
+                            <input
+                                type="email"
+                                id="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                disabled={isLoading}
+                                placeholder="you@example.com"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="password">Password</label>
+                            <input
+                                type="password"
+                                id="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                disabled={isLoading}
+                                placeholder="••••••••"
+                                minLength="8"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="btn-primary"
+                        >
+                            {isLoading ? 'Creating account...' : 'Create Account'}
+                        </button>
+                    </form>
+
+                    {/* Divider */}
+                    <div className="auth-divider">
+                        <span>OR</span>
+                    </div>
 
                     {/* Google Sign Up Button */}
                     <button

@@ -1,5 +1,5 @@
 """
-Authentication Router - Google OAuth Only
+Authentication Router - Email/Password + Google OAuth
 FastAPI server: https://api.modelix.world
 Frontend: https://run-time.in
 """
@@ -9,23 +9,121 @@ from datetime import datetime
 from typing import Dict, Any
 
 from core.config import get_settings
-from core.security import create_access_token
+from core.security import create_access_token, verify_password, get_password_hash
 from db.models import User
+from db.base import get_db
+from sqlalchemy.orm import Session
 from Schemas.user import (
     UserMeResponse,
     GoogleAuthRequestWithState,
+    UserCreate,
+    UserLogin,
 )
-from Schemas.token import TokenResponse, GoogleAuthUrlResponse
+from Schemas.token import TokenResponse, GoogleAuthUrlResponse, Token
 from dependencies.auth import get_current_user, get_current_active_user
 from crud.user import (
     get_user_by_id,
+    get_user_by_email,
     create_google_user,
+    create_user,
 )
 from utils.google_oauth import get_google_oauth_client
 from utils.redis_client import cache_delete
+import uuid
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 settings = get_settings()
+
+# ==================== EMAIL/PASSWORD AUTHENTICATION ====================
+@router.post("/signup", response_model=Token)
+async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
+    """
+    Register a new user with email and password.
+    
+    **Request Body:**
+    ```json
+    {
+        "email": "user@example.com",
+        "password": "SecurePassword123",
+        "full_name": "John Doe"
+    }
+    ```
+    
+    **Returns:**
+    - Access token for immediate login
+    """
+    # Check if user already exists
+    existing_user = get_user_by_email(user_data.email, db)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+    
+    # Create new user
+    new_user = create_user(
+        email=user_data.email,
+        password=user_data.password,
+        full_name=user_data.full_name,
+        db=db
+    )
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": str(new_user.id)})
+    
+    return Token(
+        access_token=access_token,
+        token_type="bearer"
+    )
+
+
+@router.post("/login", response_model=Token)
+async def login(credentials: UserLogin, db: Session = Depends(get_db)):
+    """
+    Login with email and password.
+    
+    **Request Body:**
+    ```json
+    {
+        "email": "user@example.com",
+        "password": "SecurePassword123"
+    }
+    ```
+    
+    **Returns:**
+    - Access token
+    """
+    # Get user by email
+    user = get_user_by_email(credentials.email, db)
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password"
+        )
+    
+    # Verify password
+    if not user.hashed_password or not verify_password(credentials.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password"
+        )
+    
+    # Check if user is active
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is inactive"
+        )
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": str(user.id)})
+    
+    return Token(
+        access_token=access_token,
+        token_type="bearer"
+    )
+
 
 # ==================== GET CURRENT USER ====================
 @router.get("/me", response_model=UserMeResponse)
@@ -40,7 +138,7 @@ async def get_me(current_user: Dict[str, Any] = Depends(get_current_active_user)
     - User details including email, name, creation date, etc.
     """
     # Fetch full user details from database
-    user = await get_user_by_id(current_user["id"])
+    user = get_user_by_id(current_user["id"])
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
