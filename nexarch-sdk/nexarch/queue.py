@@ -28,10 +28,14 @@ class LogQueue:
     
     def enqueue(self, data: Dict[str, Any]):
         """Enqueue log data"""
+        if not data:
+            return
+        
         try:
             self._queue.put_nowait(data)
         except queue.Full:
-            pass  # Drop if full
+            # Drop if full - could log this for monitoring
+            pass
     
     def _worker(self):
         """Background worker"""

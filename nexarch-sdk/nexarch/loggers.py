@@ -61,6 +61,11 @@ class NexarchLogger:
             with open(cls._log_file, 'w') as f:
                 json.dump(logs, f, indent=2)
         
+        except json.JSONDecodeError as e:
+            # Corrupted JSON file, reinitialize
+            print(f"Warning: Corrupted Nexarch log file, reinitializing: {e}")
+            with open(cls._log_file, 'w') as f:
+                json.dump([data], f, indent=2)
         except Exception as e:
             # Fallback: write to separate error log
             print(f"Warning: Failed to write to Nexarch log: {e}")

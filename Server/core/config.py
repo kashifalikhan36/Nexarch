@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
     GOOGLE_REDIRECT_URI: Optional[str] = None
+    FRONTEND_URL: str = "https://run-time.in"  # Frontend URL for OAuth redirects
     
     # Rate Limiting (per tenant)
     RATE_LIMIT_PER_MINUTE: int = 1000

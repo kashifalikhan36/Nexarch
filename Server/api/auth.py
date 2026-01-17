@@ -1,7 +1,7 @@
 """
 Authentication Router - Google OAuth Only
 FastAPI server: https://api.modelix.world
-Frontend: https://modelix.world
+Frontend: https://run-time.in
 """
 from fastapi import APIRouter, HTTPException, status, Depends, Query
 from fastapi.responses import RedirectResponse, HTMLResponse
@@ -10,12 +10,12 @@ from typing import Dict, Any
 
 from core.config import get_settings
 from core.security import create_access_token
-from database.models import User
-from schemas.user import (
+from db.models import User
+from Schemas.user import (
     UserMeResponse,
     GoogleAuthRequestWithState,
 )
-from schemas.token import TokenResponse, GoogleAuthUrlResponse
+from Schemas.token import TokenResponse, GoogleAuthUrlResponse
 from dependencies.auth import get_current_user, get_current_active_user
 from crud.user import (
     get_user_by_id,
@@ -110,8 +110,8 @@ async def google_callback(
     - Redirect to frontend with access_token in URL fragment
     """
     try:
-        # Ensure frontend URL is correct - hardcode to prevent misconfiguration
-        frontend_url = "https://modelix.world"
+        # Get frontend URL from settings
+        frontend_url = settings.FRONTEND_URL
         
         if not code:
             # Redirect to frontend login page with error
@@ -166,16 +166,14 @@ async def google_callback(
     
     except HTTPException as e:
         # Redirect to frontend login page with error
-        frontend_url = "https://modelix.world"
         return RedirectResponse(
-            url=f"{frontend_url}/login?error=http_error",
+            url=f"{settings.FRONTEND_URL}/login?error=http_error",
             status_code=status.HTTP_302_FOUND
         )
     except Exception as e:
         # Redirect to frontend login page with error
-        frontend_url = "https://modelix.world"
         return RedirectResponse(
-            url=f"{frontend_url}/login?error=server_error",
+            url=f"{settings.FRONTEND_URL}/login?error=server_error",
             status_code=status.HTTP_302_FOUND
         )
 
@@ -189,7 +187,8 @@ async def auth_callback():
     **Returns:**
     HTML page that extracts access_token from URL hash and redirects to frontend
     """
-    html_content = """
+    frontend_url = settings.FRONTEND_URL
+    html_content = f"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -224,10 +223,10 @@ async def auth_callback():
             animation: spin 1s linear infinite;
             margin: 20px auto;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin {{
+            0% {{ transform: rotate(0deg); }}
+            100% {{ transform: rotate(360deg); }}
+        }}
         h1 { color: #000000; margin-bottom: 10px; }
         p { color: #333333; margin: 10px 0; }
         .success { color: #000000; font-weight: bold; }
@@ -251,26 +250,26 @@ async def auth_callback():
 
         const statusEl = document.getElementById('status');
 
-        if (error) {
+        if (error) {{
             statusEl.innerHTML = '<span class="error">Authentication failed: ' + error + '</span>';
-            setTimeout(() => {
-                window.location.href = 'https://modelix.world/login?error=' + error;
-            }, 2000);
-        } else if (accessToken) {
+            setTimeout(() => {{
+                window.location.href = '{frontend_url}/login?error=' + error;
+            }}, 2000);
+        }} else if (accessToken) {{
             statusEl.innerHTML = '<span class="success">✓ Login successful!</span>';
             statusEl.innerHTML += '<br><span>Redirecting to dashboard...</span>';
             
             // Redirect to frontend callback page with token in hash
             // The frontend will set the cookie on its own domain
-            setTimeout(() => {
-                window.location.href = 'https://modelix.world/auth/callback#access_token=' + accessToken + '&token_type=' + (tokenType || 'bearer');
-            }, 1000);
-        } else {
+            setTimeout(() => {{
+                window.location.href = '{frontend_url}/auth/callback#access_token=' + accessToken + '&token_type=' + (tokenType || 'bearer');
+            }}, 1000);
+        }} else {{
             statusEl.innerHTML = '<span class="error">No token received</span>';
-            setTimeout(() => {
-                window.location.href = 'https://modelix.world/login';
-            }, 2000);
-        }
+            setTimeout(() => {{
+                window.location.href = '{frontend_url}/login';
+            }}, 2000);
+        }}
     </script>
 </body>
 </html>

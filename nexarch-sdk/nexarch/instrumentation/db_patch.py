@@ -234,19 +234,23 @@ def patch_pymongo():
 def _extract_operation(statement: str) -> str:
     """Extract SQL operation (SELECT, INSERT, UPDATE, DELETE)"""
     try:
+        if not statement:
+            return "UNKNOWN"
         statement = statement.strip().upper()
         operations = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER']
         for op in operations:
             if statement.startswith(op):
                 return op
         return "QUERY"
-    except:
+    except Exception:
         return "UNKNOWN"
 
 
 def _extract_table(statement: str) -> str:
     """Extract table name from SQL statement"""
     try:
+        if not statement:
+            return "unknown"
         statement = statement.strip().upper()
         
         # SELECT FROM
@@ -268,7 +272,7 @@ def _extract_table(statement: str) -> str:
                 return parts[0].strip().replace('`', '').replace('"', '')
         
         return "unknown"
-    except:
+    except Exception:
         return "unknown"
 
 

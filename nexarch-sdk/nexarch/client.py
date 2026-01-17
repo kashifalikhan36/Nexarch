@@ -30,7 +30,7 @@ class NexarchSDK:
         self.service_name = service_name or environment
         self.log_file = log_file
         self.observation_duration = observation_duration
-        self.sampling_rate = sampling_rate
+        self.sampling_rate = max(0.0, min(1.0, sampling_rate))  # Clamp between 0 and 1
         self.enable_local_logs = enable_local_logs
         self.enable_http_export = enable_http_export
         self.http_endpoint = http_endpoint

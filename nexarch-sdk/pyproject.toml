@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nexarch-sdk"
-version = "0.1.0"
+version = "0.2.0"
 description = "Nexarch SDK for runtime architecture intelligence and observability"
-readme = "RE"
+readme = "README.md"
 requires-python = ">=3.8"
 authors = [
     {name = "Nexarch Team"}
@@ -46,7 +46,7 @@ Repository = "https://github.com/nexarch/nexarch-sdk"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["python*"]
+include = ["nexarch*"]
 
 [tool.setuptools.package-data]
-python = ["*.json"]
+nexarch = ["*.json", "py.typed"]
