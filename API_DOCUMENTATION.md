@@ -25,31 +25,182 @@ Complete API reference for all FastAPI endpoints with Next.js integration exampl
 
 ## Authentication
 
-All endpoints (except admin tenant creation and health checks) require an API key.
+**Authentication Method:** Google OAuth 2.0 Only
 
-### Get API Key
-First, create a tenant to receive an API key:
+All authentication is handled via Google OAuth. Users must sign in with their Google account to access the platform.
 
-```bash
-POST /api/v1/admin/tenants
+### Google OAuth Flow
+
+#### 1. Get Google Authorization URL
+```http
+GET /auth/google
+```
+
+**Response:**
+```json
+{
+  "auth_url": "https://accounts.google.com/o/oauth2/v2/auth?..."
+}
 ```
 
 **Next.js Example:**
 ```typescript
+// pages/login.tsx
+export default function Login() {
+  const handleGoogleLogin = async () => {
+    const response = await fetch('http://localhost:8000/auth/google');
+    const { auth_url } = await response.json();
+    
+    // Redirect user to Google
+    window.location.href = auth_url;
+  };
+
+  return (
+    <button onClick={handleGoogleLogin}>
+      Sign in with Google
+    </button>
+  );
+}
+```
+
+#### 2. Google OAuth Callback
+```http
+GET /auth/google/callback?code={authorization_code}
+```
+
+This endpoint is called automatically by Google after user authorization. It:
+- Exchanges the code for user information
+- Creates or retrieves the user account
+- Redirects to frontend with access token in URL hash
+
+**Redirect URL:** `https://modelix.world/auth/callback#access_token={token}&token_type=bearer`
+
+#### 3. Alternative: Direct Token Exchange
+```http
+POST /auth/google/signin
+```
+
+**Request Body:**
+```json
+{
+  "code": "google_authorization_code",
+  "state": "optional_state_parameter"
+}
+```
+
+**Response:**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "user": {
+    "id": "user-uuid",
+    "email": "user@example.com",
+    "full_name": "John Doe",
+    "picture": "https://...",
+    "auth_provider": "google",
+    "is_active": true,
+    "is_verified": true
+  }
+}
+```
+
+**Next.js Example:**
+```typescript
+// Handle callback with authorization code
+async function handleGoogleCallback(code: string) {
+  const response = await fetch('http://localhost:8000/auth/google/signin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+  
+  const { access_token, user } = await response.json();
+  
+  // Store token
+  localStorage.setItem('access_token', access_token);
+  
+  // Redirect to dashboard
+  router.push('/dashboard');
+}
+```
+
+#### 4. Get Current User
+```http
+GET /auth/me
+```
+
+**Headers:**
+```
+Authorization: Bearer {access_token}
+```
+
+**Response:**
+```json
+{
+  "id": "user-uuid",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "role": "user",
+  "created_at": "2026-01-17T00:00:00.000Z"
+}
+```
+
+#### 5. Check Google OAuth Configuration Status
+```http
+GET /auth/google/status
+```
+
+**Response:**
+```json
+{
+  "configured": true,
+  "has_client_id": true,
+  "has_client_secret": true,
+  "has_redirect_uri": true,
+  "redirect_uri": "https://api.modelix.world/auth/google/callback",
+  "message": "Google OAuth is properly configured"
+}
+```
+
+#### 6. Logout
+```http
+POST /auth/logout
+```
+
+**Response:**
+```json
+{
+  "message": "Logged out successfully. Please remove the token from client storage."
+}
+```
+
+**Note:** Since JWT tokens are stateless, logout is handled client-side by removing the token.
+
+### API Client with Authentication
+
+```typescript
 // lib/api-client.ts
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
 
 export const apiClient = {
   async request(endpoint: string, options: RequestInit = {}) {
+    const token = localStorage.getItem('access_token');
+    
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': API_KEY || '',
+        'Authorization': token ? `Bearer ${token}` : '',
         ...options.headers,
       },
     });
+    
+    if (response.status === 401) {
+      // Redirect to login
+      window.location.href = '/login';
+      throw new Error('Unauthorized');
+    }
     
     if (!response.ok) {
       throw new Error(`API Error: ${response.statusText}`);
@@ -58,6 +209,20 @@ export const apiClient = {
     return response.json();
   },
 };
+```
+
+### Environment Setup
+
+```env
+# .env.local (Next.js Frontend)
+NEXT_PUBLIC_API_URL=https://api.modelix.world
+NEXT_PUBLIC_FRONTEND_URL=https://modelix.world
+
+# .env (FastAPI Backend)
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=https://api.modelix.world/auth/google/callback
+JWT_SECRET_KEY=your-secret-key-change-in-production
 ```
 
 ---
@@ -1838,16 +2003,47 @@ Future versions will use `/api/v2/`, etc., with backward compatibility.
 
 ## Quick Start Checklist
 
-1. ✅ Create tenant: `POST /api/v1/admin/tenants`
-2. ✅ Save API key from response
-3. ✅ Set API key in Next.js `.env.local`
-4. ✅ Install API client: Copy `lib/api-client.ts`
-5. ✅ Test connection: `GET /api/v1/health`
-6. ✅ Start ingesting telemetry data: `POST /api/v1/ingest`
-7. ✅ View dashboard: `GET /api/v1/dashboard/overview`
-8. ✅ Explore architecture: `GET /api/v1/dashboard/architecture-map`
-9. ✅ Get AI insights: `GET /api/v1/dashboard/insights`
-10. ✅ Design with AI: `POST /api/v1/ai-design/design-new`
+1. ✅ **Setup Google OAuth:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a project or select existing
+   - Enable Google+ API
+   - Create OAuth 2.0 Client ID credentials
+   - Add authorized redirect URIs:
+     - `https://api.modelix.world/auth/google/callback` (production)
+     - `http://localhost:8000/auth/google/callback` (development)
+   - Copy Client ID and Client Secret
+
+2. ✅ **Configure Backend:**
+   - Set environment variables in `.env`:
+     ```env
+     GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+     GOOGLE_CLIENT_SECRET=your-client-secret
+     GOOGLE_REDIRECT_URI=https://api.modelix.world/auth/google/callback
+     JWT_SECRET_KEY=your-secret-key-change-in-production
+     ```
+
+3. ✅ **Configure Frontend:**
+   - Set environment variables in `.env.local`:
+     ```env
+     NEXT_PUBLIC_API_URL=https://api.modelix.world
+     NEXT_PUBLIC_FRONTEND_URL=https://modelix.world
+     ```
+
+4. ✅ **Test Authentication:**
+   - Check OAuth status: `GET /auth/google/status`
+   - Test Google login flow: `GET /auth/google`
+   - Verify token validation: `GET /auth/me` (with Bearer token)
+
+5. ✅ **Create Tenant:** `POST /api/v1/admin/tenants`
+6. ✅ **Save API key from response**
+7. ✅ **Set API key in Next.js `.env.local`**
+8. ✅ **Install API client:** Copy `lib/api-client.ts`
+9. ✅ **Test connection:** `GET /api/v1/health`
+10. ✅ **Start ingesting telemetry data:** `POST /api/v1/ingest`
+11. ✅ **View dashboard:** `GET /api/v1/dashboard/overview`
+12. ✅ **Explore architecture:** `GET /api/v1/dashboard/architecture-map`
+13. ✅ **Get AI insights:** `GET /api/v1/dashboard/insights`
+14. ✅ **Design with AI:** `POST /api/v1/ai-design/design-new`
 
 ---
 

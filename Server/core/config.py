@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = "your-secret-key-change-in-production"
     API_KEY_PREFIX: str = "nex_"
     
+    # Google OAuth Configuration
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    GOOGLE_REDIRECT_URI: Optional[str] = None
+    
     # Rate Limiting (per tenant)
     RATE_LIMIT_PER_MINUTE: int = 1000
     
