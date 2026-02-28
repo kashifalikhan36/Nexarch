@@ -1,12 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import asyncio
 from core.config import get_settings
 from core.logging import setup_logging, get_logger
 from core.rate_limit import RateLimitMiddleware
 from core.cache import init_cache
 from db.base import engine, Base
 from api import ingest, architecture, workflows, health, admin, dashboard, ai_design, system, cache_api, auth, api_keys
+from streaming.websocket import router as stream_router, get_ws_manager
+from streaming.pipeline import start_pipeline
 
 
 
@@ -43,6 +46,14 @@ async def lifespan(app: FastAPI):
     # Initialize database
     logger.info("Creating database tables")
     Base.metadata.create_all(bind=engine)
+
+    # Start Pathway streaming pipeline (non-blocking daemon thread)
+    start_pipeline()
+    logger.info("[Pathway] Streaming pipeline started")
+
+    # Start WebSocket outbox drain task
+    drain_task = asyncio.create_task(get_ws_manager().drain_outbox())
+    logger.info("[WS] WebSocket drain task started")
     
     logger.info(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} started")
     logger.info(f"   Multi-tenant: {'✓' if settings.ENABLE_MULTI_TENANT else '✗'}")
@@ -51,8 +62,9 @@ async def lifespan(app: FastAPI):
     logger.info(f"   Rate Limiting: {'✓' if settings.ENABLE_RATE_LIMITING else '✗'}")
     
     yield
-    
-    logger.info(f"🛑 {settings.APP_NAME} shutdown")
+
+    drain_task.cancel()
+    logger.info(f"\U0001f6d1 {settings.APP_NAME} shutdown")
 
 
 app = FastAPI(
@@ -89,6 +101,7 @@ app.include_router(admin.router)  # Admin routes for tenant management
 app.include_router(api_keys.router)  # User API key management for SDK authentication
 app.include_router(dashboard.router)  # Dashboard endpoints with AI features
 app.include_router(ai_design.router)  # AI-powered architecture design
+app.include_router(stream_router)  # Pathway real-time stream + WebSocket
 app.include_router(ingest.router)
 app.include_router(architecture.router)
 app.include_router(workflows.router)

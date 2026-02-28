@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from db.base import get_db
 from models.span import Span as SpanIngest
@@ -7,6 +7,7 @@ from services.ingest_service import IngestService
 from core.logging import get_logger
 from dependencies.auth import get_tenant_id_from_jwt_or_api_key as get_tenant_id
 from core.cache import get_cache_manager
+from streaming.pipeline import push_span_to_stream
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
@@ -33,23 +34,28 @@ class ArchitectureDiscoveryData(BaseModel):
 
 router = APIRouter(prefix="/api/v1", tags=["ingest"])
 logger = get_logger(__name__)
-cache_manager = get_cache_manager()
 
 
 @router.post("/ingest", status_code=202, response_model=IngestResponse)
 async def ingest_span(
     span: SpanIngest,
+    background_tasks: BackgroundTasks,
     tenant_id: str = Depends(get_tenant_id),
     db: Session = Depends(get_db)
 ):
     """Accept telemetry span with tenant isolation"""
     try:
         stored_span = IngestService.store_span(db, span, tenant_id)
-        
-        # Invalidate dashboard cache when new data arrives
-        cache_manager.invalidate(tenant_id, "dashboard_overview")
-        cache_manager.invalidate(tenant_id, "architecture_map")
-        
+
+        # Push to Pathway stream (non-blocking)
+        span_dict = {**span.model_dump(), "tenant_id": tenant_id}
+        background_tasks.add_task(push_span_to_stream, span_dict)
+
+        # Invalidate legacy cache keys (background — does not delay response)
+        cache = get_cache_manager()
+        background_tasks.add_task(cache.invalidate, tenant_id, "dashboard_overview")
+        background_tasks.add_task(cache.invalidate, tenant_id, "architecture_map")
+
         return IngestResponse(span_id=stored_span.span_id)
     except Exception as e:
         logger.error(f"Ingest failed for tenant {tenant_id}: {e}")
@@ -59,16 +65,18 @@ async def ingest_span(
 @router.post("/ingest/spans", status_code=202, response_model=IngestResponse)
 async def ingest_span_alias(
     span: SpanIngest,
+    background_tasks: BackgroundTasks,
     tenant_id: str = Depends(get_tenant_id),
     db: Session = Depends(get_db)
 ):
     """Alias endpoint for /ingest/spans (SDK compatibility)"""
-    return await ingest_span(span, tenant_id, db)
+    return await ingest_span(span, background_tasks, tenant_id, db)
 
 
 @router.post("/ingest/batch", status_code=202, response_model=BatchIngestResponse)
 async def ingest_batch(
     spans: List[SpanIngest],
+    background_tasks: BackgroundTasks,
     tenant_id: str = Depends(get_tenant_id),
     db: Session = Depends(get_db)
 ):
@@ -77,10 +85,13 @@ async def ingest_batch(
     for span in spans:
         try:
             IngestService.store_span(db, span, tenant_id)
+            # Push each span to Pathway stream in background
+            span_dict = {**span.model_dump(), "tenant_id": tenant_id}
+            background_tasks.add_task(push_span_to_stream, span_dict)
         except Exception as e:
             logger.error(f"Failed to ingest span {span.span_id}: {e}")
             failed += 1
-    
+
     return BatchIngestResponse(
         count=len(spans) - failed,
         failed=failed
