@@ -13,6 +13,7 @@ import {
     AlertTriangle,
     CheckCircle,
     HardDrive,
+    Key,
     Clock,
     Activity,
     BarChart3,
@@ -181,6 +182,10 @@ export default function SettingsPage() {
                     <Link href="/ingestion">Ingestion</Link>
                     <Link href="/architecture">Architecture</Link>
                     <Link href="/ai-design">AI Design</Link>
+                    <Link href="/api-keys" className="api-link">
+                        <Key size={14} />
+                        <span>API Keys</span>
+                    </Link>
                     <Link href="/workflows">Workflows</Link>
                     <Link href="/settings" className="active">Settings</Link>
                 </div>

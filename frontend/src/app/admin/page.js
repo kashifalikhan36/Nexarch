@@ -13,6 +13,7 @@ import {
     RefreshCw,
     CheckCircle,
     XCircle,
+    Key,
     AlertTriangle,
     Shield,
     Search,
@@ -241,6 +242,10 @@ export default function AdminPage() {
                     <Link href="/ingestion">Ingestion</Link>
                     <Link href="/architecture">Architecture</Link>
                     <Link href="/ai-design">AI Design</Link>
+                    <Link href="/api-keys" className="api-link">
+                        <Key size={14} />
+                        <span>API Keys</span>
+                    </Link>
                     <Link href="/workflows">Workflows</Link>
                     <Link href="/settings">Settings</Link>
                     <Link href="/admin" className="active">Admin</Link>

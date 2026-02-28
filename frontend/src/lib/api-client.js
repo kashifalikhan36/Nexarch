@@ -1,7 +1,7 @@
 // Nexarch API Client
 // Handles all API communication with authentication support
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.modelx.world';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 class NexarchClient {
     constructor() {
@@ -372,6 +372,27 @@ class NexarchClient {
 
     async warmCache(operation) {
         return this.request(`/api/v1/cache/warm/${operation}`, { method: 'POST' });
+    }
+
+    // ============================================
+    // API KEY MANAGEMENT ENDPOINTS
+    // ============================================
+
+    async generateApiKey(name) {
+        return this.request('/api/v1/api-keys/', {
+            method: 'POST',
+            body: JSON.stringify({ name }),
+        });
+    }
+
+    async listApiKeys() {
+        return this.request('/api/v1/api-keys/');
+    }
+
+    async revokeApiKey(keyPreview) {
+        return this.request(`/api/v1/api-keys/${keyPreview}`, {
+            method: 'DELETE',
+        });
     }
 
     // ============================================

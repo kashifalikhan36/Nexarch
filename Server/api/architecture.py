@@ -10,7 +10,7 @@ from services.graph_service import GraphService
 from services.metrics_service import MetricsService
 from services.issue_detector import IssueDetector
 from core.logging import get_logger
-from core.auth import get_tenant_id
+from dependencies.auth import get_tenant_id_from_jwt_or_api_key as get_tenant_id
 from core.cache import cache_manager
 
 class ArchitectureResponse(BaseModel):

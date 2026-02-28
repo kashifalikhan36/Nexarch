@@ -5,7 +5,7 @@ from models.span import Span as SpanIngest
 from pydantic import BaseModel
 from services.ingest_service import IngestService
 from core.logging import get_logger
-from core.auth import get_tenant_id
+from dependencies.auth import get_tenant_id_from_jwt_or_api_key as get_tenant_id
 from core.cache import get_cache_manager
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -154,7 +154,7 @@ async def ingest_architecture_discovery(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/architecture-discoveries")
+@router.get("/ingest/architecture-discoveries")
 async def get_architecture_discoveries(
     tenant_id: str = Depends(get_tenant_id),
     db: Session = Depends(get_db)

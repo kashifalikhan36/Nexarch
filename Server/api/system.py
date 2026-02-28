@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from db.base import get_db
 from db.models import Tenant, User, APIKey, Span
-from core.auth import get_tenant_id
+from dependencies.auth import get_tenant_id_from_jwt as get_tenant_id
 from core.config import get_settings
 from datetime import datetime, timedelta
 

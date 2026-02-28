@@ -1164,6 +1164,25 @@ ol {
   color: var(--color-black);
 }
 
+.dashboard-nav__links .api-link {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.375rem 0.75rem;
+  background-color: var(--color-black);
+  color: var(--color-cream);
+  border-radius: 4px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.dashboard-nav__links .api-link:hover {
+  background-color: #2c2c2c;
+  color: var(--color-cream);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 .dashboard-content {
   max-width: 1400px;
   margin: 0 auto;

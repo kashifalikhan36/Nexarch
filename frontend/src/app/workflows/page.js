@@ -13,6 +13,7 @@ import {
     CheckCircle,
     XCircle,
     Clock,
+    Key,
     ArrowRight,
     BarChart2,
     Activity,
@@ -130,6 +131,10 @@ export default function WorkflowsPage() {
                     <Link href="/ingestion">Ingestion</Link>
                     <Link href="/architecture">Architecture</Link>
                     <Link href="/ai-design">AI Design</Link>
+                    <Link href="/api-keys" className="api-link">
+                        <Key size={14} />
+                        <span>API Keys</span>
+                    </Link>
                     <Link href="/workflows" className="active">Workflows</Link>
                 </div>
             </nav>

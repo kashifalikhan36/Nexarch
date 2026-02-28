@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, Key } from 'lucide-react';
 
 export default function Navbar() {
     const { user, isAuthenticated, logout, loading } = useAuth();
@@ -21,6 +21,12 @@ export default function Navbar() {
                 <Link href="/dashboard" className="navbar__link">Dashboard</Link>
                 <Link href="/ai-design" className="navbar__link">AI Design</Link>
                 <Link href="/architecture" className="navbar__link">Architecture</Link>
+                {isAuthenticated && (
+                    <Link href="/api-keys" className="navbar__link flex items-center gap-1">
+                        <Key size={14} />
+                        API Keys
+                    </Link>
+                )}
 
                 {loading ? (
                     <span className="navbar__loading">...</span>

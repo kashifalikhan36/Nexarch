@@ -13,6 +13,7 @@ import {
     FileText,
     ChevronRight,
     Plus,
+    Key,
     RefreshCw,
     CheckCircle,
     AlertCircle,
@@ -211,6 +212,10 @@ export default function AIDesignPage() {
                     <Link href="/ingestion">Ingestion</Link>
                     <Link href="/architecture">Architecture</Link>
                     <Link href="/ai-design" className="active">AI Design</Link>
+                    <Link href="/api-keys" className="api-link">
+                        <Key size={14} />
+                        <span>API Keys</span>
+                    </Link>
                 </div>
             </nav>
 

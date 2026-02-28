@@ -10,7 +10,7 @@ from services.workflow_graph_service import WorkflowGraphService
 from services.issue_detector import IssueDetector
 from datetime import datetime
 from core.logging import get_logger
-from core.auth import get_tenant_id
+from dependencies.auth import get_tenant_id_from_jwt as get_tenant_id
 from core.cache import cache_manager
 
 class WorkflowsResponse(BaseModel):

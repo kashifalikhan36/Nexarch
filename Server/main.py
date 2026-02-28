@@ -6,7 +6,7 @@ from core.logging import setup_logging, get_logger
 from core.rate_limit import RateLimitMiddleware
 from core.cache import init_cache
 from db.base import engine, Base
-from api import ingest, architecture, workflows, health, admin, dashboard, ai_design, system, cache_api, auth
+from api import ingest, architecture, workflows, health, admin, dashboard, ai_design, system, cache_api, auth, api_keys
 
 
 
@@ -60,6 +60,7 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         "https://run-time.in",
         "https://modelix.world",
+        "https://nexarch-akecdxhjcwgpeec0.centralindia-01.azurewebsites.net/"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -75,6 +76,7 @@ app.include_router(health.router)
 app.include_router(system.router)  # System info and statistics
 app.include_router(cache_api.router)  # Cache management API
 app.include_router(admin.router)  # Admin routes for tenant management
+app.include_router(api_keys.router)  # User API key management for SDK authentication
 app.include_router(dashboard.router)  # Dashboard endpoints with AI features
 app.include_router(ai_design.router)  # AI-powered architecture design
 app.include_router(ingest.router)

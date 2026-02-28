@@ -4,7 +4,7 @@ Admin endpoints for Redis cache management
 """
 from fastapi import APIRouter, Depends
 from core.cache import get_cache_manager
-from core.auth import get_tenant_id
+from dependencies.auth import get_tenant_id_from_jwt as get_tenant_id
 from core.logging import get_logger
 from typing import Dict, Any
 

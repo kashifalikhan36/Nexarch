@@ -16,7 +16,8 @@ import {
     Zap,
     AlertCircle,
     Box,
-    GitBranch
+    GitBranch,
+    Key
 } from 'lucide-react';
 
 export default function ArchitecturePage() {
@@ -100,6 +101,10 @@ export default function ArchitecturePage() {
                     <Link href="/ingestion">Ingestion</Link>
                     <Link href="/architecture" className="active">Architecture</Link>
                     <Link href="/ai-design">AI Design</Link>
+                    <Link href="/api-keys" className="api-link">
+                        <Key size={14} />
+                        <span>API Keys</span>
+                    </Link>
                 </div>
             </nav>
 

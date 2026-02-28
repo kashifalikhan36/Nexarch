@@ -1,13 +1,14 @@
 """
 Authentication dependencies for FastAPI routes
 """
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from core.security import verify_token
 from crud.user import get_user_by_id
 from db.base import get_db
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 security = HTTPBearer()
 
@@ -146,4 +147,95 @@ def get_tenant_id_from_jwt(
         )
     
     return user.tenant_id
+
+
+def get_tenant_id_from_api_key(
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    db: Session = Depends(get_db),
+) -> str:
+    """
+    Get tenant_id from X-API-Key header for SDK authentication
+    
+    Args:
+        x_api_key: API key from X-API-Key header
+        db: Database session
+        
+    Returns:
+        tenant_id string
+        
+    Raises:
+        HTTPException: If API key is invalid or inactive
+    """
+    if not x_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key is required. Provide it in X-API-Key header",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+    
+    # Get API key from database
+    from db.models import APIKey
+    api_key = db.query(APIKey).filter(APIKey.key == x_api_key).first()
+    
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+    
+    if not api_key.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key has been revoked",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+    
+    # Update last_used timestamp
+    api_key.last_used = datetime.utcnow()
+    db.commit()
+    
+    return api_key.tenant_id
+
+
+def get_tenant_id_from_jwt_or_api_key(
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+    db: Session = Depends(get_db),
+) -> str:
+    """
+    Get tenant_id from either JWT token or API key
+    This allows both dashboard (JWT) and SDK (API key) to access the same endpoints
+    
+    Args:
+        x_api_key: Optional API key from X-API-Key header
+        credentials: Optional HTTP Bearer token credentials
+        db: Database session
+        
+    Returns:
+        tenant_id string
+        
+    Raises:
+        HTTPException: If neither authentication method is valid
+    """
+    # Try API key first
+    if x_api_key:
+        try:
+            return get_tenant_id_from_api_key(x_api_key, db)
+        except HTTPException:
+            pass
+    
+    # Try JWT token
+    if credentials:
+        try:
+            return get_tenant_id_from_jwt(credentials, db)
+        except HTTPException:
+            pass
+    
+    # Neither worked
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required. Provide either Bearer token or X-API-Key header",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 

@@ -4,7 +4,7 @@ AI Design API - Endpoints for AI-powered architecture design
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from db.base import get_db
-from core.auth import get_tenant_id
+from dependencies.auth import get_tenant_id_from_jwt as get_tenant_id
 from core.logging import get_logger
 from services.ai_architecture_designer import (
     get_architecture_designer,

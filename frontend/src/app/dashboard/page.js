@@ -23,7 +23,8 @@ import {
     ArrowUpRight,
     Percent,
     Timer,
-    Layers
+    Layers,
+    Key
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -45,32 +46,42 @@ export default function DashboardPage() {
         }
     }, [authLoading, isAuthenticated]);
 
+    // Fetch trends when trendHours changes (but not on initial mount since fetchData handles it)
     useEffect(() => {
-        if (isAuthenticated) {
+        if (isAuthenticated && !loading) {
             fetchTrends();
         }
-    }, [trendHours, isAuthenticated]);
+    }, [trendHours]);
 
     const fetchData = async () => {
         setLoading(true);
         setError(null);
         try {
-            const [overviewData, healthData, trendsData, insightsData, recsData, bottlenecksData, servicesData] = await Promise.all([
+            // Fetch critical data first
+            const [overviewData, healthData, servicesData] = await Promise.all([
                 apiClient.getDashboardOverview(),
                 apiClient.getDashboardHealth(),
+                apiClient.getServices()
+            ]);
+            
+            setOverview(overviewData);
+            setHealth(healthData);
+            setServices(servicesData);
+
+            // Fetch secondary data (non-blocking)
+            Promise.all([
                 apiClient.getTrends(trendHours),
                 apiClient.getInsights(),
                 apiClient.getRecommendations(),
-                apiClient.getBottlenecks(),
-                apiClient.getServices()
-            ]);
-            setOverview(overviewData);
-            setHealth(healthData);
-            setTrends(trendsData);
-            setInsights(insightsData);
-            setRecommendations(recsData);
-            setBottlenecks(bottlenecksData);
-            setServices(servicesData);
+                apiClient.getBottlenecks()
+            ]).then(([trendsData, insightsData, recsData, bottlenecksData]) => {
+                setTrends(trendsData);
+                setInsights(insightsData);
+                setRecommendations(recsData);
+                setBottlenecks(bottlenecksData);
+            }).catch(err => {
+                console.error('Failed to fetch secondary data:', err);
+            });
         } catch (err) {
             setError(err.message);
         } finally {
@@ -135,6 +146,10 @@ export default function DashboardPage() {
                     <Link href="/ingestion">Ingestion</Link>
                     <Link href="/architecture">Architecture</Link>
                     <Link href="/ai-design">AI Design</Link>
+                    <Link href="/api-keys" className="api-link">
+                        <Key size={14} />
+                        <span>API Keys</span>
+                    </Link>
                 </div>
             </nav>
 

@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     AZURE_OPENAI_TEMPERATURE: float = 0.7
     AZURE_OPENAI_MAX_TOKENS: int = 2000
     
+    # Google Gemini API Configuration
+    GOOGLE_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None
+    
     # Authentication & Security
     JWT_SECRET_KEY: str = "your-secret-key-change-in-production"
     API_KEY_PREFIX: str = "nex_"

@@ -13,6 +13,7 @@ import {
     Plus,
     Layers,
     Globe,
+    Key,
     Code,
     ChevronDown,
     ChevronUp
@@ -134,6 +135,10 @@ export default function IngestionPage() {
                     <Link href="/ingestion" className="active">Ingestion</Link>
                     <Link href="/architecture">Architecture</Link>
                     <Link href="/ai-design">AI Design</Link>
+                    <Link href="/api-keys" className="api-link">
+                        <Key size={14} />
+                        <span>API Keys</span>
+                    </Link>
                 </div>
             </nav>
 

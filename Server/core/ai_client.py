@@ -1,5 +1,5 @@
 """
-Azure OpenAI Integration with LangChain
+AI Integration with LangChain (Gemini + Azure OpenAI Fallback)
 Handles all AI-powered architecture generation
 """
 from langchain_openai import AzureChatOpenAI
@@ -11,6 +11,15 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 import logging
 import json
+import os
+
+# Try to import Gemini
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    logging.warning("langchain-google-genai not installed. Gemini features disabled.")
 
 logger = logging.getLogger(__name__)
 
@@ -45,22 +54,55 @@ class AIWorkflowGeneration(BaseModel):
 
 
 class AzureOpenAIClient:
-    """Azure OpenAI client with LangChain integration"""
+    """AI client with Gemini + Azure OpenAI fallback support"""
     
     def __init__(self):
         self.llm = None
-        if settings.ENABLE_AI_GENERATION and settings.AZURE_OPENAI_API_KEY:
-            self.llm = AzureChatOpenAI(
-                azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
-                api_key=settings.AZURE_OPENAI_API_KEY,
-                api_version=settings.AZURE_OPENAI_API_VERSION,
-                deployment_name=settings.AZURE_OPENAI_DEPLOYMENT,
-                temperature=settings.AZURE_OPENAI_TEMPERATURE,
-                max_tokens=settings.AZURE_OPENAI_MAX_TOKENS
-            )
-            logger.info("Azure OpenAI client initialized successfully")
-        else:
-            logger.warning("Azure OpenAI not configured - AI features will be disabled")
+        self.client_type = None
+        
+        # Try Gemini first
+        if GEMINI_AVAILABLE and settings.ENABLE_AI_GENERATION:
+            try:
+                gemini_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+                if gemini_key:
+                    logger.info("Attempting to initialize Gemini API client...")
+                    self.llm = ChatGoogleGenerativeAI(
+                        model="gemini-pro",
+                        google_api_key=gemini_key,
+                        temperature=settings.AZURE_OPENAI_TEMPERATURE,
+                        max_tokens=settings.AZURE_OPENAI_MAX_TOKENS,
+                        top_p=0.21
+                    )
+                    # Quick test
+                    test_response = self.llm.invoke([HumanMessage(content="test")])
+                    self.client_type = "gemini"
+                    logger.info("✓ Gemini API client initialized successfully")
+                else:
+                    logger.info("Gemini API key not found, falling back to Azure OpenAI")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Gemini: {str(e)}. Falling back to Azure OpenAI")
+                self.llm = None
+        
+        # Fallback to Azure OpenAI
+        if self.llm is None and settings.ENABLE_AI_GENERATION and settings.AZURE_OPENAI_API_KEY:
+            try:
+                logger.info("Initializing Azure OpenAI client...")
+                self.llm = AzureChatOpenAI(
+                    azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+                    api_key=settings.AZURE_OPENAI_API_KEY,
+                    api_version=settings.AZURE_OPENAI_API_VERSION,
+                    deployment_name=settings.AZURE_OPENAI_DEPLOYMENT,
+                    temperature=settings.AZURE_OPENAI_TEMPERATURE,
+                    max_tokens=settings.AZURE_OPENAI_MAX_TOKENS
+                )
+                self.client_type = "azure"
+                logger.info("✓ Azure OpenAI client initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize Azure OpenAI: {str(e)}")
+                self.llm = None
+        
+        if self.llm is None:
+            logger.warning("No AI client configured - AI features will be disabled")
     
     async def generate_architecture_recommendation(
         self,
@@ -112,6 +154,7 @@ Return as JSON with keys: patterns (list), recommendations (list), critical_impr
         
         # Generate recommendation
         try:
+            logger.info(f"Generating architecture recommendation using {self.client_type}")
             response = await self.llm.ainvoke(prompt)
             
             # Try to parse JSON from response
@@ -145,7 +188,32 @@ Return as JSON with keys: patterns (list), recommendations (list), critical_impr
             return result
         
         except Exception as e:
-            logger.error(f"AI generation failed: {e}")
+            logger.error(f"AI generation failed with {self.client_type}: {e}")
+            
+            # If using Gemini and it fails, try Azure fallback
+            if self.client_type == "gemini":
+                try:
+                    logger.info("Gemini failed, attempting Azure OpenAI fallback...")
+                    fallback_llm = AzureChatOpenAI(
+                        azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+                        api_key=settings.AZURE_OPENAI_API_KEY,
+                        api_version=settings.AZURE_OPENAI_API_VERSION,
+                        deployment_name=settings.AZURE_OPENAI_DEPLOYMENT,
+                        temperature=settings.AZURE_OPENAI_TEMPERATURE,
+                        max_tokens=settings.AZURE_OPENAI_MAX_TOKENS
+                    )
+                    response = await fallback_llm.ainvoke(prompt)
+                    content = response.content.strip()
+                    if content.startswith('```json'):
+                        content = content.split('```json')[1].split('```')[0].strip()
+                    elif content.startswith('```'):
+                        content = content.split('```')[1].split('```')[0].strip()
+                    result = json.loads(content)
+                    logger.info("✓ Azure OpenAI fallback successful")
+                    return result
+                except Exception as azure_error:
+                    logger.error(f"Azure fallback also failed: {azure_error}")
+            
             return {
                 "patterns": ["Error generating patterns"],
                 "recommendations": ["Error generating recommendations"],
@@ -185,6 +253,7 @@ Return as JSON: {{"workflows": [...]}}
 """
         
         try:
+            logger.info(f"Generating workflow alternatives using {self.client_type}")
             response = await self.llm.ainvoke(prompt)
             
             # Try to parse JSON
@@ -202,7 +271,28 @@ Return as JSON: {{"workflows": [...]}}
             return {"workflows": []}
         
         except Exception as e:
-            logger.error(f"Workflow generation failed: {e}")
+            logger.error(f"Workflow generation failed with {self.client_type}: {e}")
+            
+            # If using Gemini and it fails, try Azure fallback
+            if self.client_type == "gemini":
+                try:
+                    logger.info("Gemini failed, attempting Azure OpenAI fallback...")
+                    fallback_llm = AzureChatOpenAI(
+                        azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+                        api_key=settings.AZURE_OPENAI_API_KEY,
+                        api_version=settings.AZURE_OPENAI_API_VERSION,
+                        deployment_name=settings.AZURE_OPENAI_DEPLOYMENT,
+                        temperature=settings.AZURE_OPENAI_TEMPERATURE,
+                        max_tokens=settings.AZURE_OPENAI_MAX_TOKENS
+                    )
+                    response = await fallback_llm.ainvoke(prompt)
+                    result = json.loads(response.content)
+                    if "workflows" in result:
+                        logger.info("✓ Azure OpenAI fallback successful")
+                        return result
+                except Exception as azure_error:
+                    logger.error(f"Azure fallback also failed: {azure_error}")
+            
             return {"workflows": []}
     
     async def explain_decision(
@@ -226,11 +316,31 @@ Return as JSON: {{"workflows": [...]}}
         """
         
         try:
+            logger.info(f"Generating decision explanation using {self.client_type}")
             response = await self.llm.ainvoke(prompt)
             return response.content
         
         except Exception as e:
-            logger.error(f"Explanation generation failed: {e}")
+            logger.error(f"Explanation generation failed with {self.client_type}: {e}")
+            
+            # If using Gemini and it fails, try Azure fallback
+            if self.client_type == "gemini":
+                try:
+                    logger.info("Gemini failed, attempting Azure OpenAI fallback...")
+                    fallback_llm = AzureChatOpenAI(
+                        azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+                        api_key=settings.AZURE_OPENAI_API_KEY,
+                        api_version=settings.AZURE_OPENAI_API_VERSION,
+                        deployment_name=settings.AZURE_OPENAI_DEPLOYMENT,
+                        temperature=settings.AZURE_OPENAI_TEMPERATURE,
+                        max_tokens=settings.AZURE_OPENAI_MAX_TOKENS
+                    )
+                    response = await fallback_llm.ainvoke(prompt)
+                    logger.info("✓ Azure OpenAI fallback successful")
+                    return response.content
+                except Exception as azure_error:
+                    logger.error(f"Azure fallback also failed: {azure_error}")
+            
             return f"Error generating explanation: {str(e)}"
     
     async def generate_dashboard_insights(
@@ -259,6 +369,7 @@ Return as JSON: {{"workflows": [...]}}
         """
         
         try:
+            logger.info(f"Generating dashboard insights using {self.client_type}")
             response = await self.llm.ainvoke(prompt)
             content = response.content.strip()
             
@@ -290,7 +401,32 @@ Return as JSON: {{"workflows": [...]}}
             return insights
         
         except Exception as e:
-            logger.error(f"Insights generation failed: {e}")
+            logger.error(f"Insights generation failed with {self.client_type}: {e}")
+            
+            # If using Gemini and it fails, try Azure fallback
+            if self.client_type == "gemini":
+                try:
+                    logger.info("Gemini failed, attempting Azure OpenAI fallback...")
+                    fallback_llm = AzureChatOpenAI(
+                        azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+                        api_key=settings.AZURE_OPENAI_API_KEY,
+                        api_version=settings.AZURE_OPENAI_API_VERSION,
+                        deployment_name=settings.AZURE_OPENAI_DEPLOYMENT,
+                        temperature=settings.AZURE_OPENAI_TEMPERATURE,
+                        max_tokens=settings.AZURE_OPENAI_MAX_TOKENS
+                    )
+                    response = await fallback_llm.ainvoke(prompt)
+                    content = response.content.strip()
+                    if content.startswith('```json'):
+                        content = content.split('```json')[1].split('```')[0].strip()
+                    elif content.startswith('```'):
+                        content = content.split('```')[1].split('```')[0].strip()
+                    insights = json.loads(content)
+                    logger.info("✓ Azure OpenAI fallback successful")
+                    return insights
+                except Exception as azure_error:
+                    logger.error(f"Azure fallback also failed: {azure_error}")
+            
             return {
                 "insights": ["Unable to generate insights"],
                 "anomalies": [], 
