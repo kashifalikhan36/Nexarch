@@ -127,7 +127,10 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
 
 # ==================== GET CURRENT USER ====================
 @router.get("/me", response_model=UserMeResponse)
-async def get_me(current_user: Dict[str, Any] = Depends(get_current_active_user)):
+async def get_me(
+    current_user: Dict[str, Any] = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
     """
     Get current authenticated user's information.
     
@@ -137,8 +140,8 @@ async def get_me(current_user: Dict[str, Any] = Depends(get_current_active_user)
     **Returns:**
     - User details including email, name, creation date, etc.
     """
-    # Fetch full user details from database
-    user = get_user_by_id(current_user["id"])
+    # Fetch full user details from database using the injected session
+    user = get_user_by_id(current_user["id"], db)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -242,8 +245,8 @@ async def google_callback(
                 status_code=status.HTTP_302_FOUND
             )
         
-        # Create or get user
-        user = await create_google_user(
+        # Create or get user (sync function — no await)
+        user = create_google_user(
             email=email,
             google_id=google_id,
             full_name=full_name,
@@ -426,8 +429,8 @@ async def google_signin(request: GoogleAuthRequestWithState):
                 detail="Email not provided by Google"
             )
         
-        # Create or get user
-        user = await create_google_user(
+        # Create or get user (sync function — no await)
+        user = create_google_user(
             email=email,
             google_id=google_id,
             full_name=full_name,

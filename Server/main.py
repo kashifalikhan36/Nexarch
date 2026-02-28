@@ -82,7 +82,7 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         "https://run-time.in",
         "https://modelix.world",
-        "https://nexarch-akecdxhjcwgpeec0.centralindia-01.azurewebsites.net/"
+        "https://nexarch-akecdxhjcwgpeec0.centralindia-01.azurewebsites.net"
     ],
     allow_credentials=True,
     allow_methods=["*"],

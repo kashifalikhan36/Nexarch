@@ -24,19 +24,28 @@ export function AuthProvider({ children }) {
                     const userData = await apiClient.getCurrentUser();
                     setUser(userData);
                     setIsAuthenticated(true);
+                    // Persist user so we can restore on network-error paths below
+                    apiClient.setUser(userData);
                 } catch (apiError) {
-                    // Only remove token if we get 401 (unauthorized)
-                    // Don't remove on network errors or other issues
+                    // 401 → token invalid, clear everything
                     if (apiError.message === 'Unauthorized') {
                         console.error('Token invalid, clearing auth');
                         apiClient.removeToken();
                         setUser(null);
                         setIsAuthenticated(false);
                     } else {
-                        // Network error or other issue - keep token, just log it
+                        // Network error or other transient issue — try to restore from
+                        // persisted user data so we never leave isAuthenticated=true with user=null
                         console.warn('Auth check had non-fatal error:', apiError.message);
-                        // Keep isAuthenticated if we have a token
-                        setIsAuthenticated(true);
+                        const cachedUser = apiClient.getUser();
+                        if (cachedUser) {
+                            setUser(cachedUser);
+                            setIsAuthenticated(true);
+                        } else {
+                            // No cached user — stay unauthenticated to avoid broken UI state
+                            setUser(null);
+                            setIsAuthenticated(false);
+                        }
                     }
                 }
             } else {
@@ -64,16 +73,17 @@ export function AuthProvider({ children }) {
     const loginWithEmail = async (email, password) => {
         try {
             await apiClient.login(email, password);
-            // Set authenticated immediately
-            setIsAuthenticated(true);
-            // Then fetch user data in background
+            // Fetch user first so isAuthenticated is never true while user is null
             try {
                 const userData = await apiClient.getCurrentUser();
                 setUser(userData);
+                apiClient.setUser(userData);
             } catch (userError) {
-                console.error('Failed to fetch user data:', userError);
-                // Continue anyway since we have the token
+                console.error('Failed to fetch user data after login:', userError);
+                // Set a minimal user object so components don\'t crash
+                setUser({ email });
             }
+            setIsAuthenticated(true);
         } catch (error) {
             console.error('Email login failed:', error);
             setIsAuthenticated(false);
@@ -84,16 +94,16 @@ export function AuthProvider({ children }) {
     const signupWithEmail = async (email, password, fullName) => {
         try {
             await apiClient.signup(email, password, fullName);
-            // Set authenticated immediately
-            setIsAuthenticated(true);
-            // Then fetch user data in background
+            // Fetch user first so isAuthenticated is never true while user is null
             try {
                 const userData = await apiClient.getCurrentUser();
                 setUser(userData);
+                apiClient.setUser(userData);
             } catch (userError) {
-                console.error('Failed to fetch user data:', userError);
-                // Continue anyway since we have the token
+                console.error('Failed to fetch user data after signup:', userError);
+                setUser({ email, full_name: fullName });
             }
+            setIsAuthenticated(true);
         } catch (error) {
             console.error('Email signup failed:', error);
             setIsAuthenticated(false);

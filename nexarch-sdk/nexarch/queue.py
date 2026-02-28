@@ -62,6 +62,31 @@ class LogQueue:
             except Exception:
                 pass  # Continue on error
     
+    def flush(self):
+        """Flush all currently-queued items to the exporter immediately.
+        Useful before process shutdown to drain without waiting for the worker timer.
+        """
+        remaining = []
+        while not self._queue.empty():
+            try:
+                remaining.append(self._queue.get_nowait())
+            except queue.Empty:
+                break
+
+        if remaining and self._exporter:
+            for item in remaining:
+                try:
+                    self._exporter.export(item)
+                except Exception:
+                    pass
+
+        # Also flush the exporter's own batch buffer (e.g. HttpExporter batches spans)
+        if self._exporter and hasattr(self._exporter, 'flush'):
+            try:
+                self._exporter.flush()
+            except Exception:
+                pass
+
     def shutdown(self):
         """Shutdown and flush"""
         self._shutdown.set()

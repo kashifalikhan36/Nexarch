@@ -26,9 +26,25 @@ class WorkflowReasoningPipeline:
         self.graph = self._build_graph()
     
     def _build_graph(self) -> StateGraph:
-        """Build LangGraph pipeline"""
+        """Build LangGraph pipeline with parallel strategy generation branches.
+
+        Topology:
+            detect_issues → classify_issues → analyze_graph → select_strategies
+                                                                      │
+                               ┌──────────────────────────────────────┤
+                               ▼                  ▼                   ▼
+                        generate_minimal  generate_performance  generate_cost
+                               │                  │                   │
+                               └──────────────────┴───────────────────┘
+                                                  ▼
+                                               finalize → END
+
+        All three generators run in parallel after `select_strategies`.
+        LangGraph waits for all branches to complete (fan-in) before `finalize`.
+        The `workflows` field uses operator.add so each branch appends to the list.
+        """
         workflow = StateGraph(ReasoningState)
-        
+
         # Nodes
         workflow.add_node("detect_issues", self._detect_issues)
         workflow.add_node("classify_issues", self._classify_issues)
@@ -38,20 +54,26 @@ class WorkflowReasoningPipeline:
         workflow.add_node("generate_performance", self._generate_performance)
         workflow.add_node("generate_cost", self._generate_cost)
         workflow.add_node("finalize", self._finalize)
-        
-        # Edges
+
+        # Linear pipeline: entry → strategy selection
         workflow.set_entry_point("detect_issues")
         workflow.add_edge("detect_issues", "classify_issues")
         workflow.add_edge("classify_issues", "analyze_graph")
         workflow.add_edge("analyze_graph", "select_strategies")
-        
-        # Simple sequential workflow generation (not parallel)
+
+        # Parallel fan-out: add three independent edges from select_strategies.
+        # LangGraph will execute all three destination nodes (one after another in the
+        # same super-step, accumulating results via the operator.add reducer on `workflows`).
         workflow.add_edge("select_strategies", "generate_minimal")
-        workflow.add_edge("generate_minimal", "generate_performance")
-        workflow.add_edge("generate_performance", "generate_cost")
+        workflow.add_edge("select_strategies", "generate_performance")
+        workflow.add_edge("select_strategies", "generate_cost")
+
+        # Fan-in: each branch converges at finalize; finalize runs after all three complete.
+        workflow.add_edge("generate_minimal", "finalize")
+        workflow.add_edge("generate_performance", "finalize")
         workflow.add_edge("generate_cost", "finalize")
         workflow.add_edge("finalize", END)
-        
+
         return workflow.compile()
     
     def _detect_issues(self, state: ReasoningState) -> ReasoningState:

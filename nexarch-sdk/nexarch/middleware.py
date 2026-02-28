@@ -92,7 +92,7 @@ class NexarchMiddleware(BaseHTTPMiddleware):
         span = Span.create_server_span(
             trace_id=trace_id,
             span_id=span_id,
-            service=self.environment,
+            service=self.service_name,
             operation=f"{request.method} {request.url.path}"
         )
         span.tags = {
@@ -161,14 +161,13 @@ class NexarchMiddleware(BaseHTTPMiddleware):
                 "timestamp": timestamp,
                 "data": span_dict
             })
-            
-            # Legacy format
-            latency_ms = round((time.time() - start_time) * 1000, 2)
+
+            # Legacy format — latency already computed above
             legacy_span = SpanData(
                 trace_id=trace_id,
                 span_id=span_id,
                 parent_id=None,
-                service=self.environment,
+                service=self.service_name,
                 operation=f"{request.method} {request.url.path}",
                 kind="server",
                 timestamp=timestamp,
@@ -206,7 +205,7 @@ class NexarchMiddleware(BaseHTTPMiddleware):
                 error_type=type(e).__name__,
                 error_message=str(e),
                 traceback=traceback.format_exc(),
-                service=self.environment,
+                service=self.service_name,
                 operation=f"{request.method} {request.url.path}",
                 method=request.method,
                 path=request.url.path,
@@ -215,12 +214,12 @@ class NexarchMiddleware(BaseHTTPMiddleware):
             
             NexarchLogger.log_error(error_data)
             
-            # Legacy span
+            # Legacy span (error path)
             legacy_span = SpanData(
                 trace_id=trace_id,
                 span_id=span_id,
                 parent_id=None,
-                service=self.environment,
+                service=self.service_name,
                 operation=f"{request.method} {request.url.path}",
                 kind="server",
                 timestamp=timestamp,

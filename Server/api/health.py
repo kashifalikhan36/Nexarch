@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from db.base import get_db
 from datetime import datetime
 from core.config import get_settings
 from core.logging import get_logger
+from core.cache import get_cache_manager
 import sys
 
 router = APIRouter(prefix="/api/v1", tags=["health"])
@@ -28,7 +30,7 @@ async def detailed_health_check(db: Session = Depends(get_db)):
     # Check database
     db_healthy = True
     try:
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db_healthy = True
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
@@ -68,15 +70,57 @@ async def detailed_health_check(db: Session = Depends(get_db)):
 @router.get("/health/ready")
 async def readiness_check(db: Session = Depends(get_db)):
     """Kubernetes readiness probe"""
+    from fastapi.responses import JSONResponse
     try:
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         return {"status": "ready"}
     except Exception as e:
         logger.error(f"Readiness check failed: {e}")
-        return {"status": "not_ready"}, 503
+        return JSONResponse(status_code=503, content={"status": "not_ready"})
 
 
 @router.get("/health/live")
 async def liveness_check():
     """Kubernetes liveness probe"""
     return {"status": "alive"}
+
+
+@router.post("/sdk/heartbeat")
+async def sdk_heartbeat(request: Request):
+    """
+    Receive a periodic heartbeat from SDK-instrumented services.
+
+    Payload: ``{"service": "...", "environment": "..."}``
+
+    Stores ``sdk:heartbeat:{tenant_id}:{service}`` in Redis with a 300 s TTL so the
+    dashboard can show which services were active recently.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    service     = body.get("service", "unknown")
+    environment = body.get("environment", "unknown")
+
+    # Resolve tenant from API key header (best-effort; no hard auth required)
+    api_key   = request.headers.get("X-API-Key") or request.headers.get("x-api-key")
+    tenant_id = "global"
+    if api_key:
+        # Format: nex_<tenant_id>_...
+        parts = api_key.split("_")
+        if len(parts) >= 2:
+            tenant_id = parts[1]
+
+    # Write to cache with 5-minute TTL (cache.set is synchronous)
+    cache = get_cache_manager()
+    if cache:
+        redis_key = f"sdk:heartbeat:{tenant_id}:{service}"
+        cache.set(
+            tenant_id,
+            f"heartbeat:{service}",
+            {"service": service, "environment": environment, "last_seen": datetime.utcnow().isoformat()},
+            ttl=300,
+        )
+
+    return {"received": True, "service": service, "tenant": tenant_id}

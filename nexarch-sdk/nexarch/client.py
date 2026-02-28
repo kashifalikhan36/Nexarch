@@ -1,4 +1,5 @@
 """Nexarch SDK Client"""
+import threading
 from fastapi import FastAPI
 from .middleware import NexarchMiddleware
 from .router import nexarch_router
@@ -8,6 +9,9 @@ from .queue import get_log_queue
 from .instrumentation import patch_requests, patch_httpx
 from .instrumentation.db_patch import patch_all_databases
 from typing import Optional
+
+# Heartbeat interval in seconds
+_HEARTBEAT_INTERVAL = 60
 
 
 class NexarchSDK:
@@ -23,72 +27,118 @@ class NexarchSDK:
         enable_http_export: bool = False,
         http_endpoint: Optional[str] = None,
         enable_auto_discovery: bool = True,
-        enable_db_instrumentation: bool = True
+        enable_db_instrumentation: bool = True,
+        heartbeat_interval: int = _HEARTBEAT_INTERVAL,
     ):
         self.api_key = api_key
         self.environment = environment
         self.service_name = service_name or environment
         self.log_file = log_file
         self.observation_duration = observation_duration
-        self.sampling_rate = max(0.0, min(1.0, sampling_rate))  # Clamp between 0 and 1
+        self.sampling_rate = max(0.0, min(1.0, sampling_rate))
         self.enable_local_logs = enable_local_logs
         self.enable_http_export = enable_http_export
         self.http_endpoint = http_endpoint
         self.enable_auto_discovery = enable_auto_discovery
         self.enable_db_instrumentation = enable_db_instrumentation
-        
+        self.heartbeat_interval = heartbeat_interval
+        self._heartbeat_timer: Optional[threading.Timer] = None
+
         # Init logger
         NexarchLogger.initialize(
             log_file=log_file,
             enable_local_logs=enable_local_logs
         )
-        
+
         # Setup exporter
         if enable_http_export and http_endpoint:
-            exporter = HttpExporter(http_endpoint, api_key)
+            self._exporter = HttpExporter(http_endpoint, api_key)
         else:
-            exporter = LocalJSONExporter(log_file)
-        
+            self._exporter = LocalJSONExporter(log_file)
+
         queue = get_log_queue()
-        queue.set_exporter(exporter)
+        queue.set_exporter(self._exporter)
         queue.start()
-        
+
         # Patch HTTP clients
         patch_requests()
         patch_httpx()
-        
+
         # Patch database drivers
         if enable_db_instrumentation:
             patch_all_databases()
             print("[Nexarch] Database instrumentation enabled - capturing all DB queries")
-    
+
     def init(self, app: FastAPI) -> None:
         """Attach SDK to FastAPI"""
-        
-        # Add middleware with auto-discovery
+
         app.add_middleware(
             NexarchMiddleware,
             api_key=self.api_key,
             environment=self.environment,
             service_name=self.service_name,
             sampling_rate=self.sampling_rate,
-            enable_auto_discovery=self.enable_auto_discovery
+            enable_auto_discovery=self.enable_auto_discovery,
         )
-        
-        # Auto-inject router
+
         app.include_router(
             nexarch_router,
             prefix="/__nexarch",
             tags=["Nexarch Internal"],
-            include_in_schema=False
+            include_in_schema=False,
         )
-        
+
+        # Start periodic heartbeat when HTTP export is configured
+        if self.enable_http_export and self.http_endpoint:
+            self._start_heartbeat()
+
         print(f"[Nexarch] SDK initialized for service '{self.service_name}'")
         print(f"[Nexarch] Auto-discovery: {'enabled' if self.enable_auto_discovery else 'disabled'}")
         print(f"[Nexarch] DB instrumentation: {'enabled' if self.enable_db_instrumentation else 'disabled'}")
-    
+
+    def close(self) -> None:
+        """Stop the heartbeat timer and flush remaining telemetry."""
+        self._stop_heartbeat()
+        get_log_queue().flush()
+
+    # ── Heartbeat ─────────────────────────────────────────────────────────────
+
+    def _start_heartbeat(self) -> None:
+        self._schedule_next_heartbeat()
+        print(f"[Nexarch] Heartbeat scheduled every {self.heartbeat_interval}s")
+
+    def _stop_heartbeat(self) -> None:
+        if self._heartbeat_timer is not None:
+            self._heartbeat_timer.cancel()
+            self._heartbeat_timer = None
+
+    def _schedule_next_heartbeat(self) -> None:
+        self._heartbeat_timer = threading.Timer(
+            self.heartbeat_interval, self._heartbeat_tick
+        )
+        self._heartbeat_timer.daemon = True
+        self._heartbeat_timer.start()
+
+    def _heartbeat_tick(self) -> None:
+        """Send heartbeat to backend and reschedule."""
+        try:
+            if isinstance(self._exporter, HttpExporter):
+                self._exporter._send_with_retry(
+                    '/api/v1/sdk/heartbeat',
+                    {'service': self.service_name, 'environment': self.environment},
+                )
+        except Exception as e:
+            print(f"[Nexarch] Heartbeat failed: {e}")
+        finally:
+            # Always reschedule even on failure
+            self._schedule_next_heartbeat()
+
+    # ── Convenience ───────────────────────────────────────────────────────────
+
     @staticmethod
-    def start(app: FastAPI, api_key: str, **kwargs) -> None:
-        """One-line init"""
+    def start(app: FastAPI, api_key: str, **kwargs) -> 'NexarchSDK':
+        """One-line init — returns the SDK instance so callers can call .close()."""
         sdk = NexarchSDK(api_key=api_key, **kwargs)
         sdk.init(app)
+        return sdk
+

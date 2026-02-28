@@ -11,7 +11,7 @@ from services.issue_detector import IssueDetector
 from datetime import datetime
 from core.logging import get_logger
 from dependencies.auth import get_tenant_id_from_jwt as get_tenant_id
-from core.cache import cache_manager
+from core.cache import get_cache_manager
 
 class WorkflowsResponse(BaseModel):
     workflows: List[Workflow]
@@ -33,7 +33,8 @@ async def get_generated_workflows(
 ):
     """Get generated workflows with tenant isolation and caching"""
     # Check cache
-    cached = cache_manager.get(tenant_id, "workflows")
+    cache = get_cache_manager()
+    cached = cache.get(tenant_id, "workflows")
     if cached:
         logger.info(f"Returning cached workflows for tenant {tenant_id}")
         return WorkflowsResponse(**cached)
@@ -49,7 +50,7 @@ async def get_generated_workflows(
     }
     
     # Cache result
-    cache_manager.set(tenant_id, "workflows", response_data)
+    cache.set(tenant_id, "workflows", response_data)
     
     return WorkflowsResponse(**response_data)
 
@@ -108,7 +109,7 @@ async def get_workflow_architecture_graph(
     - Does NOT modify any existing data
     """
     # Check cache
-    cached = cache_manager.get(tenant_id, "workflow_graph")
+    cached = get_cache_manager().get(tenant_id, "workflow_graph")
     if cached:
         logger.info(f"Returning cached workflow graph for tenant {tenant_id}")
         return WorkflowArchitectureGraphResponse(**cached)
@@ -125,7 +126,7 @@ async def get_workflow_architecture_graph(
     )
     
     # Cache result
-    cache_manager.set(tenant_id, "workflow_graph", response.model_dump())
+    get_cache_manager().set(tenant_id, "workflow_graph", response.model_dump())
     
     logger.info(f"Generated workflow architecture graph for tenant {tenant_id}: {len(current.nodes)} nodes, {len(variants)} variants")
     return response

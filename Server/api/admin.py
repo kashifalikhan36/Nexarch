@@ -1,15 +1,32 @@
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from db.base import get_db
 from db.models import Tenant, User, APIKey as DBAPIKey
 from pydantic import BaseModel, EmailStr
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 import uuid
 import secrets
+from core.config import get_settings
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
+_settings = get_settings()
+
+
+def _require_admin(x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key")) -> None:
+    """
+    Protect admin endpoints with a shared secret set in ADMIN_SECRET_KEY env var.
+    If ADMIN_SECRET_KEY is not configured the endpoints return 503 (disabled).
+    """
+    admin_secret = _settings.ADMIN_SECRET_KEY  # may be empty string / None
+    if not admin_secret:
+        raise HTTPException(
+            status_code=503,
+            detail="Admin API is disabled. Set ADMIN_SECRET_KEY in environment to enable it.",
+        )
+    if x_admin_key != admin_secret:
+        raise HTTPException(status_code=403, detail="Invalid admin key")
 
 
 class CreateTenantRequest(BaseModel):
@@ -78,14 +95,14 @@ async def create_tenant(request: CreateTenantRequest, db: Session = Depends(get_
     )
 
 
-@router.get("/tenants")
+@router.get("/tenants", dependencies=[Depends(_require_admin)])
 async def list_tenants(db: Session = Depends(get_db)):
     """List all tenants"""
     tenants = db.query(Tenant).all()
     return [{"id": t.id, "name": t.name, "is_active": t.is_active, "created_at": t.created_at.isoformat()} for t in tenants]
 
 
-@router.get("/tenants/{tenant_id}")
+@router.get("/tenants/{tenant_id}", dependencies=[Depends(_require_admin)])
 async def get_tenant(tenant_id: str, db: Session = Depends(get_db)):
     """Get tenant details"""
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
@@ -109,7 +126,7 @@ async def get_tenant(tenant_id: str, db: Session = Depends(get_db)):
     }
 
 
-@router.patch("/tenants/{tenant_id}")
+@router.patch("/tenants/{tenant_id}", dependencies=[Depends(_require_admin)])
 async def update_tenant(
     tenant_id: str,
     is_active: bool = None,
@@ -140,7 +157,7 @@ async def update_tenant(
     }
 
 
-@router.delete("/tenants/{tenant_id}")
+@router.delete("/tenants/{tenant_id}", dependencies=[Depends(_require_admin)])
 async def delete_tenant(tenant_id: str, db: Session = Depends(get_db)):
     """
     Delete tenant and all associated data (USE WITH CAUTION).
@@ -164,7 +181,7 @@ async def delete_tenant(tenant_id: str, db: Session = Depends(get_db)):
     }
 
 
-@router.post("/tenants/{tenant_id}/api-keys")
+@router.post("/tenants/{tenant_id}/api-keys", dependencies=[Depends(_require_admin)])
 async def create_api_key(
     tenant_id: str,
     name: str,
@@ -195,7 +212,7 @@ async def create_api_key(
     }
 
 
-@router.get("/tenants/{tenant_id}/api-keys")
+@router.get("/tenants/{tenant_id}/api-keys", dependencies=[Depends(_require_admin)])
 async def list_api_keys(tenant_id: str, db: Session = Depends(get_db)):
     """List API keys for tenant (masked)"""
     keys = db.query(DBAPIKey).filter(DBAPIKey.tenant_id == tenant_id).all()

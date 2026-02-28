@@ -10,7 +10,6 @@ from typing import Dict, Any
 
 router = APIRouter(prefix="/api/v1/cache", tags=["cache"])
 logger = get_logger(__name__)
-cache_manager = get_cache_manager()
 
 
 @router.get("/stats")
@@ -19,9 +18,9 @@ async def get_cache_stats(tenant_id: str = Depends(get_tenant_id)) -> Dict[str, 
     Get cache statistics
     Shows Redis stats if connected, or in-memory stats
     """
-    stats = cache_manager.get_stats()
+    stats = get_cache_manager().get_stats()
     stats["tenant_id"] = tenant_id
-    stats["backend_type"] = "redis" if cache_manager.is_redis() else "in-memory"
+    stats["backend_type"] = "redis" if get_cache_manager().is_redis() else "in-memory"
     return stats
 
 
@@ -31,7 +30,7 @@ async def invalidate_tenant_cache(tenant_id: str = Depends(get_tenant_id)) -> Di
     Invalidate all cache for current tenant
     Use when you want to force refresh of all cached data
     """
-    cache_manager.invalidate(tenant_id)
+    get_cache_manager().invalidate(tenant_id)
     logger.info(f"Cache invalidated for tenant: {tenant_id}")
     return {
         "status": "success",
@@ -49,7 +48,7 @@ async def invalidate_operation_cache(
     Invalidate cache for specific operation
     Operations: dashboard_overview, architecture_map, services, etc.
     """
-    cache_manager.invalidate(tenant_id, operation)
+    get_cache_manager().invalidate(tenant_id, operation)
     logger.info(f"Cache invalidated for tenant {tenant_id}, operation: {operation}")
     return {
         "status": "success",
@@ -68,38 +67,17 @@ async def warm_cache(
     Pre-warm cache for specific operation
     Useful for reducing latency before peak usage
     """
-    # Import here to avoid circular dependency
-    from api.dashboard import get_dashboard_overview, get_architecture_map
-    from api.architecture import get_current_architecture
-    from db.base import get_db
-    
-    db = next(get_db())
-    
-    try:
-        if operation == "dashboard_overview":
-            await get_dashboard_overview(tenant_id, db)
-        elif operation == "architecture_map":
-            await get_architecture_map(tenant_id, db)
-        elif operation == "current_architecture":
-            await get_current_architecture(tenant_id, db)
-        else:
-            return {
-                "status": "error",
-                "message": f"Unknown operation: {operation}"
-            }
-        
-        return {
-            "status": "success",
-            "message": f"Cache warmed for operation: {operation}",
-            "operation": operation
-        }
-    
-    except Exception as e:
-        logger.error(f"Cache warming failed: {e}")
-        return {
-            "status": "error",
-            "message": str(e)
-        }
+    supported = {"dashboard_overview", "architecture_map", "current_architecture", "ai_insights", "ai_recommendations"}
+    if operation not in supported:
+        return {"status": "error", "message": f"Unknown operation: {operation}. Supported: {sorted(supported)}"}
+    # Trigger a cache-miss by invalidating; the next real request will re-populate.
+    get_cache_manager().invalidate(tenant_id, operation)
+    logger.info(f"Cache pre-invalidated (warm-on-next-request) for {tenant_id}/{operation}")
+    return {
+        "status": "success",
+        "message": f"Cache warm triggered for operation: {operation} — will populate on next request",
+        "operation": operation
+    }
 
 
 @router.get("/health")
@@ -108,15 +86,16 @@ async def cache_health() -> Dict[str, Any]:
     Check cache health
     Returns connection status and basic metrics
     """
-    stats = cache_manager.get_stats()
-    
+    cm = get_cache_manager()
+    stats = cm.get_stats()
+
     is_healthy = True
-    if cache_manager.is_redis():
+    if cm.is_redis():
         is_healthy = stats.get("status") == "connected"
-    
+
     return {
         "healthy": is_healthy,
-        "backend": "redis" if cache_manager.is_redis() else "in-memory",
+        "backend": "redis" if cm.is_redis() else "in-memory",
         "stats": stats
     }
 
@@ -127,12 +106,13 @@ async def get_cache_info(tenant_id: str = Depends(get_tenant_id)) -> Dict[str, A
     Get cache info (alias for stats)
     Returns backend type and statistics
     """
-    stats = cache_manager.get_stats()
+    cm = get_cache_manager()
+    stats = cm.get_stats()
     return {
-        "backend": "redis" if cache_manager.is_redis() else "in-memory",
+        "backend": "redis" if cm.is_redis() else "in-memory",
         "tenant_id": tenant_id,
         "stats": stats,
-        "is_connected": cache_manager.is_redis()
+        "is_connected": cm.is_redis()
     }
 
 
@@ -141,7 +121,7 @@ async def clear_cache(tenant_id: str = Depends(get_tenant_id)) -> Dict[str, str]
     """
     Clear all cache for current tenant (alias for invalidate)
     """
-    cache_manager.invalidate(tenant_id)
+    get_cache_manager().invalidate(tenant_id)
     logger.info(f"Cache cleared for tenant: {tenant_id}")
     return {
         "status": "success",

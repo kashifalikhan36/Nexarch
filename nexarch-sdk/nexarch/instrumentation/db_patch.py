@@ -2,12 +2,52 @@
 Database instrumentation - Auto-capture all database queries
 Supports: SQLAlchemy, MongoDB, Redis, PostgreSQL, MySQL
 """
+import re
 import time
 import uuid
 from typing import Optional, Any
 from ..tracing import get_trace_id, get_span_id, Span
 from ..queue import get_log_queue
 from datetime import datetime
+
+# ── SQL sanitizer ─────────────────────────────────────────────────────────────
+# Compiled once at import time for performance.
+_RE_SINGLE_QUOTED   = re.compile(r"'(?:[^'\\]|\\.)*'")
+_RE_DOUBLE_QUOTED   = re.compile(r'"(?:[^"\\]|\\.)*"')
+_RE_NUMERIC_LITERAL = re.compile(r'\b\d+(\.\d+)?\b')
+_RE_IN_LIST         = re.compile(r'IN\s*\([^)]+\)', re.IGNORECASE)
+_RE_WHITESPACE      = re.compile(r'\s+')
+
+
+def sanitize_sql(statement: str, max_length: int = 500) -> str:
+    """
+    Strip literal values from a SQL statement so it can be stored and
+    compared safely without leaking PII or credentials.
+
+    Transformations applied (in order):
+    1. Replace single-quoted strings  → '?'
+    2. Replace double-quoted strings  → '?'
+    3. Replace IN (...) value lists   → IN (?)
+    4. Replace numeric literals       → ?
+    5. Collapse whitespace
+    6. Truncate to *max_length* chars
+
+    Examples
+    --------
+    >>> sanitize_sql("SELECT * FROM users WHERE id = 123")
+    'SELECT * FROM users WHERE id = ?'
+    >>> sanitize_sql("INSERT INTO t (a,b) VALUES ('hello', 42)")
+    "INSERT INTO t (a,b) VALUES ('?', ?)"
+    """
+    if not statement:
+        return ''
+    s = _RE_SINGLE_QUOTED.sub("'?'", statement)
+    s = _RE_DOUBLE_QUOTED.sub('"?"', s)
+    s = _RE_IN_LIST.sub('IN (?)', s)
+    s = _RE_NUMERIC_LITERAL.sub('?', s)
+    s = _RE_WHITESPACE.sub(' ', s).strip()
+    return s[:max_length]
+
 
 _is_patched = False
 _original_execute = None
@@ -56,7 +96,7 @@ def patch_sqlalchemy():
                 start_time=datetime.now().isoformat(),
                 tags={
                     "db.system": conn.engine.dialect.name,
-                    "db.statement": statement[:500],  # Limit query length
+                    "db.statement": sanitize_sql(statement),  # Strip literals, limit length
                     "db.operation": _extract_operation(statement),
                     "db.table": _extract_table(statement),
                     "span.kind": "client"

@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     REDIS_SSL: bool = True  # Azure Cache for Redis uses SSL by default
     REDIS_DB: int = 0
     CACHE_TTL_SECONDS: int = 300  # 5 minutes default TTL
-    CACHE_ENABLED: bool = True  # Master switch for caching
+    # (CACHE_ENABLED is an older alias — use ENABLE_CACHING feature flag below)
     
     # Azure OpenAI Configuration
     AZURE_OPENAI_ENDPOINT: str = ""
@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     # Authentication & Security
     JWT_SECRET_KEY: str = "your-secret-key-change-in-production"
     API_KEY_PREFIX: str = "nex_"
+    ADMIN_SECRET_KEY: str = ""  # Set to a strong secret to enable admin API endpoints
     
     # Google OAuth Configuration
     GOOGLE_CLIENT_ID: Optional[str] = None
