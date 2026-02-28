@@ -279,5 +279,5 @@ def get_cache_manager() -> CacheManager:
     return _cache_manager
 
 
-# For backward compatibility
-cache_manager = get_cache_manager()
+# NOTE: Do not import `cache_manager` directly — use get_cache_manager() so you always
+# get the Redis-initialized singleton set by init_cache() during app startup.

@@ -5,11 +5,15 @@ import atexit
 from typing import Dict, Any, Optional
 
 
+# Maximum number of spans held in memory before dropping.  At ~1KB per span this is ~10 MB.
+_MAX_QUEUE_SIZE = 10_000
+
+
 class LogQueue:
     """Thread-safe async log queue"""
-    
+
     def __init__(self, flush_interval: float = 1.0):
-        self._queue = queue.Queue()
+        self._queue = queue.Queue(maxsize=_MAX_QUEUE_SIZE)
         self._exporter = None
         self._flush_interval = flush_interval
         self._worker_thread: Optional[threading.Thread] = None

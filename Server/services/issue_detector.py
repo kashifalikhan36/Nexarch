@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+import networkx as nx
 from services.graph_service import GraphService
 from services.metrics_service import MetricsService
 from reasoning.rules import RuleEngine
@@ -16,23 +17,34 @@ class IssueDetector:
     @staticmethod
     async def detect_issues_with_ai(db: Session, tenant_id: str) -> List[Issue]:
         """
-        Detect issues using BOTH rule-based engine + Azure OpenAI
-        Combines deterministic rules with AI pattern recognition
+        Detect issues using BOTH rule-based engine + Azure OpenAI.
+        Graph is built exactly once and reused for both.
         """
+        # Build graph ONCE — reused by rule engine and AI
+        nodes, edges = GraphService.build_graph(db, tenant_id)
+
+        # Reconstruct NetworkX graph from already-loaded data (no second DB query)
+        G = nx.DiGraph()
+        for node in nodes:
+            G.add_node(node.id, type=node.type, metrics=node.metrics.model_dump())
+        for edge in edges:
+            G.add_edge(edge.source, edge.target,
+                       call_count=edge.call_count,
+                       avg_latency_ms=edge.avg_latency_ms,
+                       error_rate=edge.error_rate)
+
         # Rule-based detection (fast, deterministic)
-        G = GraphService.get_graph_from_db(db, tenant_id)
         rule_issues = RuleEngine.run_all_rules(G)
         logger.info(f"Rule engine detected {len(rule_issues)} issues")
-        
+
         # AI-powered anomaly detection (intelligent, context-aware)
         ai_client = get_ai_client()
         ai_issues = []
-        
+
         if ai_client.llm:
             try:
-                # Get metrics for AI analysis
+                # Reuse already-computed global metrics
                 metrics = MetricsService.compute_global_metrics(db, tenant_id)
-                nodes, edges = GraphService.build_graph(db, tenant_id)
                 
                 architecture = {
                     "services": [{"name": n.id, "type": n.type, "metrics": n.metrics.model_dump()} for n in nodes],

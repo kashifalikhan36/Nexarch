@@ -67,25 +67,14 @@ class WorkflowGenerator:
         
         return all_workflows
     
-    def generate_workflows(self, db: Session, issues: List[Issue], tenant_id: str) -> List[Workflow]:
-        """Synchronous wrapper for backward compatibility"""
-        try:
-            # Try to run async version
-            import asyncio
-            try:
-                loop = asyncio.get_running_loop()
-                # We're already in an async context, can't use asyncio.run
-                # Return sync version instead
-                raise RuntimeError("Use async version directly")
-            except RuntimeError:
-                # No running loop, safe to use asyncio.run
-                return asyncio.run(self.generate_workflows_with_ai(db, issues, tenant_id))
-        except Exception as e:
-            # Fallback to LangGraph only
-            logger.warning(f"Async workflow generation failed, using LangGraph only: {e}")
-            G = GraphService.get_graph_from_db(db, tenant_id)
-            workflows = self.pipeline.run(G)
-            logger.info(f"Generated {len(workflows)} workflows via LangGraph for tenant {tenant_id}")
-            return workflows
+    def generate_workflows_sync(self, db: Session, issues: List[Issue], tenant_id: str) -> List[Workflow]:
+        """
+        LangGraph-only fallback for contexts where asyncio.run() is not usable.
+        Callers inside async handlers should use `await generate_workflows_with_ai()` directly.
+        """
+        G = GraphService.get_graph_from_db(db, tenant_id)
+        workflows = self.pipeline.run(G)
+        logger.info(f"Generated {len(workflows)} workflows via LangGraph (sync) for tenant {tenant_id}")
+        return workflows
 
 

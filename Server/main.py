@@ -14,10 +14,20 @@ settings = get_settings()
 logger = get_logger(__name__)
 
 
+_DEFAULT_JWT_SECRET = "your-secret-key-change-in-production"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown"""
     setup_logging(settings.DEBUG)
+
+    # Safety: refuse to start with the default JWT secret in production
+    if settings.ENVIRONMENT == "production" and settings.JWT_SECRET_KEY == _DEFAULT_JWT_SECRET:
+        raise RuntimeError(
+            "FATAL: JWT_SECRET_KEY is still the default placeholder value. "
+            "Set a strong secret in your .env before running in production."
+        )
     
     # Initialize cache
     if settings.ENABLE_CACHING:
