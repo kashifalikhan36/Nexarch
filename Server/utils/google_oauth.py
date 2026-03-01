@@ -2,10 +2,13 @@
 Google OAuth client utilities
 """
 import httpx
+from urllib.parse import urlencode
 from typing import Optional, Dict, Any
 from core.config import get_settings
+from core.logging import get_logger
 
 settings = get_settings()
+logger = get_logger(__name__)
 
 
 class GoogleOAuthClient:
@@ -37,7 +40,7 @@ class GoogleOAuthClient:
             "prompt": "consent",
         }
         
-        query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+        query_string = urlencode(params)
         return f"{self.auth_url}?{query_string}"
     
     async def authenticate_with_code(self, code: str) -> Optional[Dict[str, Any]]:
@@ -65,7 +68,7 @@ class GoogleOAuthClient:
                 )
                 
                 if token_response.status_code != 200:
-                    print(f"Token exchange failed: {token_response.text}")
+                    logger.warning(f"Token exchange failed: {token_response.text}")
                     return None
                 
                 token_data = token_response.json()
@@ -81,13 +84,13 @@ class GoogleOAuthClient:
                 )
                 
                 if userinfo_response.status_code != 200:
-                    print(f"Userinfo failed: {userinfo_response.text}")
+                    logger.warning(f"Userinfo failed: {userinfo_response.text}")
                     return None
                 
                 return userinfo_response.json()
         
         except Exception as e:
-            print(f"OAuth error: {e}")
+            logger.error(f"OAuth error: {e}")
             return None
 
 

@@ -1,6 +1,7 @@
 """Dashboard – Overview sub-router: /overview, /architecture-map, /services, /health, /dependencies, /bottlenecks"""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+import networkx as nx
 from db.base import get_db
 from db.models import Span
 from dependencies.auth import get_tenant_id_from_jwt
@@ -58,7 +59,7 @@ async def get_dashboard_overview(
 
     logger.info(f"✗ Cache MISS: dashboard_overview tenant {tenant_id}")
 
-    nodes, _edges = GraphService.build_graph(db, tenant_id)
+    nodes, edges = GraphService.build_graph(db, tenant_id)
     metrics = MetricsService.compute_global_metrics(db, tenant_id)
     issues = await IssueDetector.detect_issues(db, tenant_id)
 
@@ -71,7 +72,15 @@ async def get_dashboard_overview(
     health_score -= critical_issues * 10
     health_score = max(0, min(100, health_score))
 
-    G = GraphService.get_graph_from_db(db, tenant_id)
+    # Build nx graph from already-loaded data — no second DB round-trip
+    G = nx.DiGraph()
+    for node in nodes:
+        G.add_node(node.id, type=node.type, metrics=node.metrics.model_dump())
+    for edge in edges:
+        G.add_edge(edge.source, edge.target,
+                   call_count=edge.call_count,
+                   avg_latency_ms=edge.avg_latency_ms,
+                   error_rate=edge.error_rate)
     analysis = GraphAnalysis.analyze_architecture(G)
     uptime = (1 - metrics["error_rate"]) * 100
 
@@ -188,7 +197,6 @@ async def get_system_health(
     db: Session = Depends(get_db)
 ):
     """System health scores by category."""
-    _nodes, _edges = GraphService.build_graph(db, tenant_id)
     metrics = MetricsService.compute_global_metrics(db, tenant_id)
     issues = await IssueDetector.detect_issues(db, tenant_id)
     G = GraphService.get_graph_from_db(db, tenant_id)

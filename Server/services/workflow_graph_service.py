@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Dict, Any, Tuple
 import networkx as nx
-from collections import Counter
 
 from db.models import Span
 from services.graph_service import GraphService

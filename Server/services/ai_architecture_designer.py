@@ -2,6 +2,8 @@
 AI Architecture Designer - Uses Azure OpenAI + LangChain to design new architectures
 Generates completely NEW architecture designs based on requirements
 """
+import re
+import json
 from typing import Dict, List, Any, Optional
 from pydantic import BaseModel
 from core.ai_client import get_ai_client
@@ -363,37 +365,84 @@ Consider the team size and timeline constraints.
                 {"name": "product-service", "responsibility": "product catalog"},
                 {"name": "order-service", "responsibility": "order processing"}
             ],
+            "migration_order": ["user-service", "product-service", "order-service"],
+            "shared_concerns": ["authentication", "logging", "monitoring", "configuration"],
+            "generated_at": datetime.now().isoformat(),
             "note": "AI unavailable - using template decomposition"
         }
-    
+
     def _fallback_event_driven(self) -> Dict[str, Any]:
         return {
             "events": [
                 {"name": "OrderCreated", "payload": {"order_id": "string"}},
                 {"name": "PaymentProcessed", "payload": {"payment_id": "string"}}
             ],
+            "streams": ["events-stream", "commands-stream"],
+            "patterns": ["event_sourcing", "cqrs", "saga"],
+            "message_broker": "kafka",
+            "generated_at": datetime.now().isoformat(),
             "note": "AI unavailable - using template events"
         }
-    
+
+    # ── AI response parsing helpers ──────────────────────────────────────
+
+    def _parse_json_from_text(self, text: str) -> Optional[Dict[str, Any]]:
+        """
+        Try to extract and parse a JSON object from arbitrary LLM response text.
+        Handles both bare JSON and markdown code-fenced JSON.
+        """
+        # Strip markdown code fences if present
+        fenced = re.search(r'```(?:json)?\s*(\{.*?\}|\[.*?\])\s*```', text, re.DOTALL)
+        if fenced:
+            text = fenced.group(1)
+        # Find the outermost {...} block
+        start = text.find('{')
+        end = text.rfind('}')
+        if start != -1 and end != -1 and end > start:
+            try:
+                return json.loads(text[start:end + 1])
+            except json.JSONDecodeError:
+                pass
+        return None
+
     def _extract_microservices(self, text: str) -> List[Dict[str, Any]]:
-        """Extract microservice definitions from AI response"""
-        # Simplified - would use proper NLP in production
+        """Extract microservice definitions from AI response."""
+        parsed = self._parse_json_from_text(text)
+        if parsed and isinstance(parsed.get("microservices"), list):
+            return parsed["microservices"]
+        # Fallback template
         return [
             {"name": "user-service", "bounded_context": "user_management"},
             {"name": "product-service", "bounded_context": "catalog"},
             {"name": "order-service", "bounded_context": "ordering"}
         ]
-    
+
     def _extract_migration_order(self, text: str) -> List[str]:
+        """Extract migration order from AI response."""
+        parsed = self._parse_json_from_text(text)
+        if parsed and isinstance(parsed.get("migration_order"), list):
+            return parsed["migration_order"]
         return ["user-service", "product-service", "order-service"]
-    
+
     def _extract_events(self, text: str) -> List[Dict[str, Any]]:
+        """Extract domain events from AI response."""
+        parsed = self._parse_json_from_text(text)
+        if parsed and isinstance(parsed.get("events"), list):
+            return parsed["events"]
         return [{"name": "DomainEvent", "consumers": []}]
-    
+
     def _extract_streams(self, text: str) -> List[str]:
+        """Extract event stream names from AI response."""
+        parsed = self._parse_json_from_text(text)
+        if parsed and isinstance(parsed.get("streams"), list):
+            return parsed["streams"]
         return ["events-stream", "commands-stream"]
-    
+
     def _extract_optimizations(self, text: str) -> List[Dict[str, Any]]:
+        """Extract optimization recommendations from AI response."""
+        parsed = self._parse_json_from_text(text)
+        if parsed and isinstance(parsed.get("optimizations"), list):
+            return parsed["optimizations"]
         return [
             {
                 "optimization": "Add caching layer",

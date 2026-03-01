@@ -192,7 +192,8 @@ async def get_google_auth_url():
 @router.get("/google/callback")
 async def google_callback(
     code: str = Query(None),
-    state: str = Query(None)
+    state: str = Query(None),
+    db: Session = Depends(get_db),
 ):
     """
     Handle Google OAuth callback.
@@ -251,6 +252,7 @@ async def google_callback(
             google_id=google_id,
             full_name=full_name,
             picture=picture,
+            db=db,
         )
         
         # Create access token
@@ -379,7 +381,10 @@ async def auth_callback():
 
 
 @router.post("/google/signin", response_model=TokenResponse)
-async def google_signin(request: GoogleAuthRequestWithState):
+async def google_signin(
+    request: GoogleAuthRequestWithState,
+    db: Session = Depends(get_db),
+):
     """
     Alternative Google login endpoint that returns token directly (no redirect).
     
@@ -435,6 +440,7 @@ async def google_signin(request: GoogleAuthRequestWithState):
             google_id=google_id,
             full_name=full_name,
             picture=picture,
+            db=db,
         )
         
         # Create access token

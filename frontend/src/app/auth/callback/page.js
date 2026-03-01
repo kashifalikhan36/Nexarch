@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 function CallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { handleCallback } = useAuth();
+    const { handleCallback, checkAuth } = useAuth();
 
     useEffect(() => {
         const processCallback = async () => {
@@ -20,8 +20,10 @@ function CallbackContent() {
             const accessToken = hashParams.get('access_token');
 
             if (accessToken) {
-                // Token provided directly in hash
+                // Token provided directly in hash — store then refresh AuthContext state
+                // so the user arrives at the dashboard fully authenticated (not just tokenised)
                 localStorage.setItem('access_token', accessToken);
+                await checkAuth();
                 router.push('/dashboard');
             } else if (code) {
                 // Exchange code for token
@@ -39,7 +41,7 @@ function CallbackContent() {
         };
 
         processCallback();
-    }, [searchParams, handleCallback, router]);
+    }, [searchParams, handleCallback, checkAuth, router]);
 
     return (
         <div className="auth-page">

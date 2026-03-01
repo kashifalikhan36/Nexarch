@@ -80,20 +80,16 @@ async def ingest_batch(
     tenant_id: str = Depends(get_tenant_id),
     db: Session = Depends(get_db)
 ):
-    """Accept batch of telemetry spans"""
-    failed = 0
-    for span in spans:
-        try:
-            IngestService.store_span(db, span, tenant_id)
-            # Push each span to Pathway stream in background
-            span_dict = {**span.model_dump(), "tenant_id": tenant_id}
-            background_tasks.add_task(push_span_to_stream, span_dict)
-        except Exception as e:
-            logger.error(f"Failed to ingest span {span.span_id}: {e}")
-            failed += 1
+    """Accept batch of telemetry spans — stored in a single DB transaction"""
+    success, failed = IngestService.store_spans_batch(db, spans, tenant_id)
+
+    # Push successfully prepared spans to Pathway stream in background
+    for span in spans[:success]:
+        span_dict = {**span.model_dump(), "tenant_id": tenant_id}
+        background_tasks.add_task(push_span_to_stream, span_dict)
 
     return BatchIngestResponse(
-        count=len(spans) - failed,
+        count=success,
         failed=failed
     )
 

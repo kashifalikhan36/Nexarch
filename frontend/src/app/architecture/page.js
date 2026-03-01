@@ -361,7 +361,7 @@ export default function ArchitecturePage() {
                                                 <span className="issue-card__type">{issue.type}</span>
                                                 <span className={`severity-badge severity-badge--${issue.severity}`}>{issue.severity}</span>
                                             </div>
-                                            <div className="issue-card__service"><Server size={14} />{issue.service}</div>
+                                            <div className="issue-card__service"><Server size={14} />{issue.affected_nodes?.[0] || issue.affected_services?.[0] || 'Multiple Services'}</div>
                                             <p className="issue-card__description">{issue.description}</p>
                                             {issue.recommendation && (
                                                 <div className="issue-card__recommendation">

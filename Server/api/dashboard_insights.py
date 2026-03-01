@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from db.base import get_db
 from db.models import Span
+import networkx as nx
 from dependencies.auth import get_tenant_id_from_jwt
 from core.cache import get_cache_manager
 from core.ai_client import get_ai_client
@@ -31,7 +32,7 @@ async def get_ai_insights(
 
     try:
         metrics = MetricsService.compute_global_metrics(db, tenant_id)
-        end_time, start_time = datetime.now(), datetime.now() - timedelta(hours=24)
+        start_time = datetime.now() - timedelta(hours=24)
         recent_spans = db.query(Span).filter(
             Span.tenant_id == tenant_id,
             Span.start_time >= start_time,
@@ -114,7 +115,15 @@ async def get_ai_architecture_recommendations(
     try:
         nodes, edges = GraphService.build_graph(db, tenant_id)
         issues = await IssueDetector.detect_issues(db, tenant_id)
-        G = GraphService.get_graph_from_db(db, tenant_id)
+        # Build nx graph from already-loaded data — avoids a second DB round-trip
+        G = nx.DiGraph()
+        for node in nodes:
+            G.add_node(node.id, type=node.type, metrics=node.metrics.model_dump())
+        for edge in edges:
+            G.add_edge(edge.source, edge.target,
+                       call_count=edge.call_count,
+                       avg_latency_ms=edge.avg_latency_ms,
+                       error_rate=edge.error_rate)
         analysis = GraphAnalysis.analyze_architecture(G)
 
         architecture = {
@@ -210,7 +219,8 @@ async def generate_workflow_alternatives(
                 issues=[i.model_dump() for i in issues],
                 goal=goal,
             )
-            workflows = WorkflowGenerator.generate_workflows_sync(db, tenant_id)
+            generator = WorkflowGenerator()
+            workflows = generator.generate_workflows_sync(db, issues, tenant_id)
             result = {
                 "ai_workflows": ai_result.get("workflows", []),
                 "langgraph_workflow": workflows[0].model_dump() if workflows else None,
@@ -224,7 +234,8 @@ async def generate_workflow_alternatives(
             }
         else:
             logger.warning("Azure OpenAI not configured, using LangGraph fallback")
-            workflows = WorkflowGenerator.generate_workflows_sync(db, tenant_id)
+            generator = WorkflowGenerator()
+            workflows = generator.generate_workflows_sync(db, issues, tenant_id)
             result = {
                 "workflows": [w.model_dump() for w in workflows],
                 "goal": goal,

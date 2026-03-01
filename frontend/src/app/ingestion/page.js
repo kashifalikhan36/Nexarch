@@ -98,7 +98,7 @@ export default function IngestionPage() {
                 middleware: '',
                 architecture_pattern: 'microservices'
             });
-            fetchData();
+            await fetchData();
         } catch (err) {
             setError(err.message);
         } finally {

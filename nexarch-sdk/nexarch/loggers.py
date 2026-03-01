@@ -3,6 +3,7 @@ Nexarch Logger - Handles local JSON logging and future remote export
 """
 import json
 import os
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -18,6 +19,7 @@ class NexarchLogger:
     _instance: Optional['NexarchLogger'] = None
     _log_file: Optional[str] = None
     _enable_local_logs: bool = True
+    _lock: threading.Lock = threading.Lock()
     
     @classmethod
     def initialize(cls, log_file: str = "nexarch_telemetry.json", enable_local_logs: bool = True):
@@ -45,30 +47,32 @@ class NexarchLogger:
     def _append_to_log(cls, data: dict):
         """
         Append data to the JSON log file.
+        Thread-safe: uses a class-level lock to prevent concurrent read-modify-write races.
         """
         if not cls._enable_local_logs or not cls._log_file:
             return
         
-        try:
-            # Read existing data
-            with open(cls._log_file, 'r') as f:
-                logs = json.load(f)
+        with cls._lock:
+            try:
+                # Read existing data
+                with open(cls._log_file, 'r') as f:
+                    logs = json.load(f)
+                
+                # Append new data
+                logs.append(data)
+                
+                # Write back
+                with open(cls._log_file, 'w') as f:
+                    json.dump(logs, f, indent=2)
             
-            # Append new data
-            logs.append(data)
-            
-            # Write back
-            with open(cls._log_file, 'w') as f:
-                json.dump(logs, f, indent=2)
-        
-        except json.JSONDecodeError as e:
-            # Corrupted JSON file, reinitialize
-            print(f"Warning: Corrupted Nexarch log file, reinitializing: {e}")
-            with open(cls._log_file, 'w') as f:
-                json.dump([data], f, indent=2)
-        except Exception as e:
-            # Fallback: write to separate error log
-            print(f"Warning: Failed to write to Nexarch log: {e}")
+            except json.JSONDecodeError as e:
+                # Corrupted JSON file, reinitialize
+                print(f"Warning: Corrupted Nexarch log file, reinitializing: {e}")
+                with open(cls._log_file, 'w') as f:
+                    json.dump([data], f, indent=2)
+            except Exception as e:
+                # Fallback: write to separate error log
+                print(f"Warning: Failed to write to Nexarch log: {e}")
     
     @classmethod
     def log_span(cls, span: SpanData):

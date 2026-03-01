@@ -117,6 +117,7 @@ export default function SignupPage() {
                                 onChange={(e) => setFullName(e.target.value)}
                                 disabled={isLoading}
                                 placeholder="John Doe"
+                                required
                             />
                         </div>
                         <div className="form-group">
