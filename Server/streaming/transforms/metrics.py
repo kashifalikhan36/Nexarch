@@ -21,12 +21,12 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import pathway as pw
+    import pathway as pw  # type: ignore[import]
 
 
 def _build_window_metrics(spans: "pw.Table", duration_minutes: int) -> "pw.Table":
     """Build rolling-window metrics for a given window duration."""
-    import pathway as pw
+    import pathway as pw  # type: ignore[import]
 
     duration = timedelta(minutes=duration_minutes)
     hop = timedelta(minutes=max(1, duration_minutes // 5))  # hop = 20% of window
@@ -58,7 +58,7 @@ def _build_window_metrics(spans: "pw.Table", duration_minutes: int) -> "pw.Table
     return windowed
 
 
-def build_metrics_5m(spans: "pw.Table") -> "pw.Table":
+def build_metrics_5m(spans: "pw.Table") -> "pw.Table":  # type: ignore[return]
     """5-minute rolling window — real-time alerting."""
     return _build_window_metrics(spans, duration_minutes=5)
 

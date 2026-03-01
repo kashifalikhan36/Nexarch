@@ -36,7 +36,7 @@ _pathway_available: bool = False
 # Try importing Pathway; if not installed the pipeline degrades gracefully
 # --------------------------------------------------------------------------
 try:
-    import pathway as pw
+    import pathway as pw  # type: ignore[import]
     from streaming.connectors import get_span_subject, get_redis_output
     _pathway_available = True
 except ImportError:

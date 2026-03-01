@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 try:
-    import pathway as pw
+    import pathway as pw  # type: ignore[import]
 
     class SpanSubject(pw.io.python.ConnectorSubject):
         """

@@ -8,6 +8,7 @@ networkx==3.4.2
 langchain>=0.2.0
 langchain-openai>=0.1.0
 langchain-core>=0.2.0
+langchain-google-genai>=1.0.0
 langgraph>=0.1.0
 fastmcp>=0.3.0
 httpx==0.27.0
@@ -17,4 +18,5 @@ pymongo==4.6.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
-pathway>=0.15.0
+# pathway is optional — install manually if available on your platform: pip install pathway
+# pathway>=0.15.0

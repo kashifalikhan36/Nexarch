@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import pathway as pw
+    import pathway as pw  # type: ignore[import]
 
 
 def build_node_table(spans: "pw.Table") -> "pw.Table":
@@ -24,7 +24,7 @@ def build_node_table(spans: "pw.Table") -> "pw.Table":
     - running error rate
     - node type classification
     """
-    import pathway as pw
+    import pathway as pw  # type: ignore[import]
 
     nodes = spans.groupby(
         pw.this.tenant_id,
@@ -50,7 +50,7 @@ def build_edge_table(spans: "pw.Table") -> "pw.Table":
     Group spans that have a downstream service set to produce the
     dependency edge table.
     """
-    import pathway as pw
+    import pathway as pw  # type: ignore[import]
 
     # Filter only spans that have a downstream dependency
     spans_with_downstream = spans.filter(pw.this.has_downstream)

@@ -14,7 +14,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import pathway as pw
+    import pathway as pw  # type: ignore[import]
 
 # Thresholds (kept in sync with core/config.py)
 HIGH_LATENCY_MS = 1000.0
@@ -26,7 +26,7 @@ def detect_high_latency(metrics_5m: "pw.Table") -> "pw.Table":
     Flag services whose 5-min average latency exceeds the threshold.
     Returns a table of (tenant_id, service_name, avg_latency_ms, severity).
     """
-    import pathway as pw
+    import pathway as pw  # type: ignore[import]
 
     return metrics_5m.filter(
         pw.this.avg_latency_ms > HIGH_LATENCY_MS
@@ -52,7 +52,7 @@ def detect_high_error_rate(metrics_5m: "pw.Table") -> "pw.Table":
     """
     Flag services whose 5-min error rate exceeds the threshold.
     """
-    import pathway as pw
+    import pathway as pw  # type: ignore[import]
 
     return metrics_5m.filter(
         pw.this.error_rate > HIGH_ERROR_RATE
@@ -79,7 +79,7 @@ def detect_low_throughput(metrics_5m: "pw.Table") -> "pw.Table":
     Flag services that have gone quiet (possible outage / degradation).
     Fires when a previously-seen service drops below 1 req/min in a 5-min window.
     """
-    import pathway as pw
+    import pathway as pw  # type: ignore[import]
 
     return metrics_5m.filter(
         (pw.this.request_count < 5) & (pw.this.request_count > 0)
@@ -100,7 +100,7 @@ def detect_low_throughput(metrics_5m: "pw.Table") -> "pw.Table":
 
 def merge_issues(*issue_tables: "pw.Table") -> "pw.Table":
     """Concatenate multiple issue tables into one unified issues stream."""
-    import pathway as pw
+    import pathway as pw  # type: ignore[import]
 
     result = issue_tables[0]
     for tbl in issue_tables[1:]:
