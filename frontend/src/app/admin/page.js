@@ -22,8 +22,7 @@ import {
     Mail,
     Calendar,
     Activity,
-    Settings,
-    Key
+    Settings
 } from 'lucide-react';
 
 export default function AdminPage() {
