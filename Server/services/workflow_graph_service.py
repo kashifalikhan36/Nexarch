@@ -142,14 +142,16 @@ class WorkflowGraphService:
         variants = []
         
         # Variant 1: Most common execution path
-        common_path_variant = WorkflowGraphService._generate_common_path_variant(G, db, tenant_id)
-        if common_path_variant:
-            variants.append(common_path_variant)
+        if len(variants) < num_variants:
+            common_path_variant = WorkflowGraphService._generate_common_path_variant(G, db, tenant_id)
+            if common_path_variant:
+                variants.append(common_path_variant)
         
         # Variant 2: Optimized/reduced-latency path
-        optimized_variant = WorkflowGraphService._generate_optimized_variant(G, db, tenant_id)
-        if optimized_variant:
-            variants.append(optimized_variant)
+        if len(variants) < num_variants:
+            optimized_variant = WorkflowGraphService._generate_optimized_variant(G, db, tenant_id)
+            if optimized_variant:
+                variants.append(optimized_variant)
         
         # Variant 3: High-reliability path
         if len(variants) < num_variants:

@@ -202,7 +202,12 @@ async def generate_workflow_alternatives(
     try:
         nodes, edges = GraphService.build_graph(db, tenant_id)
         issues = await IssueDetector.detect_issues(db, tenant_id)
-        G = GraphService.get_graph_from_db(db, tenant_id)
+        # Build nx graph from already-loaded nodes/edges — avoids a second DB round-trip
+        G = nx.DiGraph()
+        for _n in nodes:
+            G.add_node(_n.id, type=_n.type, metrics=_n.metrics.model_dump())
+        for _e in edges:
+            G.add_edge(_e.source, _e.target, call_count=_e.call_count, avg_latency_ms=_e.avg_latency_ms, error_rate=_e.error_rate)
         analysis = GraphAnalysis.analyze_architecture(G)
 
         architecture = {

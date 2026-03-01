@@ -98,7 +98,7 @@ function toFlowGraph(architectureMap, liveMetrics) {
     const positions = computeLayout(nodes);
 
     const rfNodes = nodes.map((n, i) => {
-        const live      = liveMetrics[n.id];
+        const live      = liveMetrics[n.id]?.[0];  // newest snapshot in history array
         const errorRate = live?.error_rate   ?? n.metrics?.error_rate   ?? 0;
         const latency   = live?.avg_latency_ms != null
             ? Math.round(live.avg_latency_ms)
@@ -234,6 +234,7 @@ export default function ArchitecturePage() {
                     <Link href="/dashboard">Dashboard</Link>
                     <Link href="/ingestion">Ingestion</Link>
                     <Link href="/architecture" className="active">Architecture</Link>
+                    <Link href="/workflows">Workflows</Link>
                     <Link href="/ai-design">AI Design</Link>
                     <Link href="/api-keys" className="api-link">
                         <Key size={14} /><span>API Keys</span>

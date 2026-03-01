@@ -2,7 +2,7 @@
 import time
 import uuid
 from typing import Optional
-from ..tracing import get_trace_id, get_span_id, Span
+from ..tracing import get_trace_id, get_span_id, Span, add_downstream_ms
 from ..queue import get_log_queue
 
 _original_request = None
@@ -55,11 +55,17 @@ def _instrumented_request(self, method, url, **kwargs):
         error = str(e)
         raise
     finally:
+        latency_ms = round((time.time() - start) * 1000, 2)
         span.finish(status_code=status_code, error=error)
+        add_downstream_ms(latency_ms)
         
         # Enqueue span
         get_log_queue().enqueue({
             "type": "span",
             "timestamp": span.start_time,
-            "data": span.to_dict()
+            "data": {
+                **span.to_dict(),
+                "latency_ms": latency_ms,
+                "http_latency": latency_ms,
+            }
         })

@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from db.base import get_db
-from pydantic import BaseModel
 from typing import List, Dict, Any
 from models.node import Node
 from models.edge import Edge
@@ -12,15 +11,7 @@ from services.issue_detector import IssueDetector
 from core.logging import get_logger
 from dependencies.auth import get_tenant_id_from_jwt_or_api_key as get_tenant_id
 from core.cache import get_cache_manager
-
-class ArchitectureResponse(BaseModel):
-    nodes: List[Node]
-    edges: List[Edge]
-    metrics_summary: Dict[str, Any]
-
-class IssuesResponse(BaseModel):
-    issues: List[Issue]
-    total_count: int
+from Schemas.architecture import ArchitectureResponse, IssuesResponse
 
 router = APIRouter(prefix="/api/v1/architecture", tags=["architecture"])
 logger = get_logger(__name__)

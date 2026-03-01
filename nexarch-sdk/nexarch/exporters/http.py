@@ -109,7 +109,11 @@ class HttpExporter(Exporter):
             try:
                 resp = self.session.post(url, json=payload, timeout=self.timeout)
                 if resp.status_code in (200, 201, 202):
-                    return resp.json() if resp.text else {}
+                    try:
+                        return resp.json() if resp.text else {}
+                    except ValueError:
+                        # Response body is not valid JSON — delivery succeeded, ignore body
+                        return {}
                 # 4xx errors are NOT retried (client error, not transient)
                 if 400 <= resp.status_code < 500:
                     print(

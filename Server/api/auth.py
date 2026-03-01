@@ -28,8 +28,6 @@ from crud.user import (
     create_user,
 )
 from utils.google_oauth import get_google_oauth_client
-from utils.redis_client import cache_delete
-import uuid
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 settings = get_settings()

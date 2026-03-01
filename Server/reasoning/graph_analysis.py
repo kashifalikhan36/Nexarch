@@ -52,9 +52,18 @@ class GraphAnalysis:
     
     @staticmethod
     def compute_service_layers(G: nx.DiGraph) -> Dict[str, int]:
-        """Topological layers"""
+        """Topological layers — depth from any source node."""
         try:
-            return nx.shortest_path_length(G, target=None)
+            if G.number_of_nodes() == 0:
+                return {}
+            # nx.shortest_path_length(G, target=None) returns a generator of
+            # (source, dict) pairs.  Aggregate: layer = min distance from any source.
+            layer: Dict[str, int] = {}
+            for _source, lengths in nx.shortest_path_length(G):
+                for node, dist in lengths.items():
+                    if node not in layer or dist < layer[node]:
+                        layer[node] = dist
+            return layer
         except Exception:
             return {}
     

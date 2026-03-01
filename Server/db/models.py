@@ -124,6 +124,7 @@ class ArchitectureDiscovery(Base):
     databases = Column(Text, nullable=False)  # JSON array of database connections
     external_services = Column(Text, nullable=False)  # JSON array of external dependencies
     middleware = Column(Text, nullable=True)  # JSON array of middleware
+    dependencies = Column(Text, nullable=True)  # JSON dict of service dependencies
     architecture_patterns = Column(Text, nullable=True)  # JSON dict of patterns
     discovered_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

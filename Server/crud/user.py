@@ -1,13 +1,20 @@
 """
 CRUD operations for User model
 """
-from typing import Optional
+from typing import Optional, Tuple
 from db.models import User, Tenant
-from db.base import get_db
+from db.base import get_db, SessionLocal
 from datetime import datetime
 from sqlalchemy.orm import Session
 from core.security import get_password_hash
 import uuid
+
+
+def _get_session(db: Optional[Session]) -> Tuple[Session, bool]:
+    """Return *(session, owned)* where *owned* means the caller must close it."""
+    if db is not None:
+        return db, False
+    return SessionLocal(), True
 
 
 def get_user_by_id(user_id: str, db: Session = None) -> Optional[User]:
@@ -21,15 +28,16 @@ def get_user_by_id(user_id: str, db: Session = None) -> Optional[User]:
     Returns:
         User object or None if not found
     """
-    if db is None:
-        db = next(get_db())
-    
+    _db, owned = _get_session(db)
     try:
-        user = db.query(User).filter(User.id == user_id).first()
+        user = _db.query(User).filter(User.id == user_id).first()
         return user
     except Exception as e:
         print(f"Error getting user by ID: {e}")
         return None
+    finally:
+        if owned:
+            _db.close()
 
 
 def get_user_by_email(email: str, db: Session = None) -> Optional[User]:
@@ -43,15 +51,16 @@ def get_user_by_email(email: str, db: Session = None) -> Optional[User]:
     Returns:
         User object or None if not found
     """
-    if db is None:
-        db = next(get_db())
-    
+    _db, owned = _get_session(db)
     try:
-        user = db.query(User).filter(User.email == email.lower()).first()
+        user = _db.query(User).filter(User.email == email.lower()).first()
         return user
     except Exception as e:
         print(f"Error getting user by email: {e}")
         return None
+    finally:
+        if owned:
+            _db.close()
 
 
 def create_google_user(
@@ -75,11 +84,24 @@ def create_google_user(
         User object
     """
     if db is None:
-        db = next(get_db())
-    
+        _db = SessionLocal()
+        try:
+            return _create_google_user_impl(email, google_id, full_name, picture, _db)
+        finally:
+            _db.close()
+    return _create_google_user_impl(email, google_id, full_name, picture, db)
+
+
+def _create_google_user_impl(
+    email: str,
+    google_id: str,
+    full_name: Optional[str] = None,
+    picture: Optional[str] = None,
+    db: Session = None,
+) -> User:
     # Check if user exists
     existing_user = get_user_by_email(email, db)
-    
+
     if existing_user:
         # Update existing user with Google info
         existing_user.google_id = google_id
@@ -132,7 +154,6 @@ def create_google_user(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
     return new_user
 
 
@@ -155,9 +176,20 @@ def create_user(
         User object
     """
     if db is None:
-        db = next(get_db())
-    
-    # Hash the password
+        _db = SessionLocal()
+        try:
+            return _create_user_impl(email, password, full_name, _db)
+        finally:
+            _db.close()
+    return _create_user_impl(email, password, full_name, db)
+
+
+def _create_user_impl(
+    email: str,
+    password: str,
+    full_name: Optional[str] = None,
+    db: Session = None,
+) -> User:
     hashed_password = get_password_hash(password)
     
     # Create tenant for new user

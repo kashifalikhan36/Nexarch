@@ -4,6 +4,8 @@ from .context import (
     get_trace_id,
     get_span_id,
     get_parent_span_id,
+    add_downstream_ms,
+    get_downstream_ms,
     clear_trace_context
 )
 from .span import Span
@@ -14,6 +16,8 @@ __all__ = [
     'get_trace_id',
     'get_span_id',
     'get_parent_span_id',
+    'add_downstream_ms',
+    'get_downstream_ms',
     'clear_trace_context',
     'Span',
     'Sampler'

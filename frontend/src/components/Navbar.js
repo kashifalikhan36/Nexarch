@@ -1,15 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { User, LogOut, Key } from 'lucide-react';
 
 export default function Navbar() {
+    const router = useRouter();
     const { user, isAuthenticated, logout, loading } = useAuth();
 
     const handleLogout = async () => {
         await logout();
-        window.location.href = '/';
+        router.push('/');
     };
 
     return (
@@ -34,7 +36,7 @@ export default function Navbar() {
                     <div className="navbar__user">
                         <span className="navbar__user-name">
                             <User size={16} />
-                            {user?.name || user?.email || 'User'}
+                            {user?.full_name || user?.email || 'User'}
                         </span>
                         <button onClick={handleLogout} className="btn btn-secondary navbar__logout">
                             <LogOut size={14} />

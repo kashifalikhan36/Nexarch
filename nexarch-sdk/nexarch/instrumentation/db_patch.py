@@ -6,7 +6,7 @@ import re
 import time
 import uuid
 from typing import Optional, Any
-from ..tracing import get_trace_id, get_span_id, Span
+from ..tracing import get_trace_id, get_span_id, Span, add_downstream_ms
 from ..queue import get_log_queue
 from datetime import datetime
 
@@ -50,6 +50,8 @@ def sanitize_sql(statement: str, max_length: int = 500) -> str:
 
 
 _is_patched = False
+_redis_is_patched = False
+_pymongo_is_patched = False
 _original_execute = None
 _original_execute_async = None
 
@@ -118,6 +120,7 @@ def patch_sqlalchemy():
                     "db_latency": latency_ms
                 }
             })
+            add_downstream_ms(latency_ms)  # accumulate into parent span
         
         _is_patched = True
         print("[Nexarch] SQLAlchemy instrumentation enabled")
@@ -130,6 +133,9 @@ def patch_sqlalchemy():
 
 def patch_redis():
     """Monkey-patch Redis client to capture cache operations"""
+    global _redis_is_patched
+    if _redis_is_patched:
+        return
     try:
         import redis
         original_execute_command = redis.Redis.execute_command
@@ -186,8 +192,10 @@ def patch_redis():
                         "cache_latency": latency_ms
                     }
                 })
+                add_downstream_ms(latency_ms)  # accumulate into parent span
         
         redis.Redis.execute_command = instrumented_execute_command
+        _redis_is_patched = True
         print("[Nexarch] Redis instrumentation enabled")
     
     except ImportError:
@@ -198,6 +206,9 @@ def patch_redis():
 
 def patch_pymongo():
     """Monkey-patch PyMongo to capture MongoDB operations"""
+    global _pymongo_is_patched
+    if _pymongo_is_patched:
+        return
     try:
         from pymongo import monitoring
         
@@ -270,11 +281,13 @@ def patch_pymongo():
                         "db_latency": latency_ms
                     }
                 })
+                add_downstream_ms(latency_ms)  # accumulate into parent span
                 
                 # Cleanup
                 del self._requests[event.request_id]
         
         monitoring.register(NexarchCommandLogger())
+        _pymongo_is_patched = True
         print("[Nexarch] MongoDB instrumentation enabled")
     
     except ImportError:

@@ -51,7 +51,7 @@ export default function DashboardPage() {
         if (isAuthenticated && !loading) {
             fetchTrends();
         }
-    }, [trendHours]);
+    }, [trendHours, isAuthenticated, loading]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -162,7 +162,7 @@ export default function DashboardPage() {
                         <h1 className="display-title display-md" style={{ marginTop: '0.5rem' }}>
                             DASHBOARD
                         </h1>
-                        {user && <p className="dashboard-welcome">Welcome back, {user.name || user.email}</p>}
+                        {user && <p className="dashboard-welcome">Welcome back, {user.full_name || user.email}</p>}
                     </div>
                     <div className="dashboard-header__actions">
                         <button onClick={fetchData} className="btn btn-secondary" disabled={loading}>
@@ -334,9 +334,9 @@ export default function DashboardPage() {
                                                 </div>
                                                 <div className="trend-item__value">
                                                     {trends.summary?.volume_change > 0 ? (
-                                                        <TrendingUp size={16} className="trend-down" />
+                                                        <TrendingUp size={16} className="trend-up" />
                                                     ) : (
-                                                        <TrendingDown size={16} className="trend-up" />
+                                                        <TrendingDown size={16} className="trend-down" />
                                                     )}
                                                     {Math.abs(trends.summary?.volume_change || 0).toFixed(1)}%
                                                 </div>

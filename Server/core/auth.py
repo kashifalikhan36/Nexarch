@@ -5,7 +5,6 @@ from typing import Optional
 from db.base import get_db
 from db.models import APIKey, Tenant
 from datetime import datetime
-from functools import lru_cache
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,13 +16,6 @@ class AuthContext:
         self.tenant_id = tenant_id
         self.api_key = api_key
         self.user_id = user_id
-
-
-@lru_cache(maxsize=1000)
-def _get_cached_api_key(api_key: str, db_url: str) -> Optional[tuple]:
-    """Cache API key lookups for 5 minutes"""
-    # This is a simplified cache - in production use Redis
-    return None
 
 
 async def verify_api_key(
@@ -64,7 +56,7 @@ async def verify_api_key(
     
     # Update last_used timestamp (don't block the request)
     try:
-        api_key_obj.last_used = datetime.now()
+        api_key_obj.last_used = datetime.utcnow()
         db.commit()
     except Exception as e:
         logger.warning(f"Failed to update API key last_used: {e}")

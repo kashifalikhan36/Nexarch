@@ -75,12 +75,6 @@ class AIArchitectureDesigner:
         try:
             prompt = self._build_design_prompt(requirements, num_alternatives)
             
-            # Use LangChain structured output
-            from langchain_core.output_parsers import PydanticOutputParser
-            from langchain_core.prompts import PromptTemplate
-            
-            parser = PydanticOutputParser(pydantic_object=ArchitectureDesign)
-            
             designs = []
             for i in range(num_alternatives):
                 # Generate design with different optimization focus
@@ -455,10 +449,13 @@ Consider the team size and timeline constraints.
 
 # Singleton instance
 _designer_instance = None
+_designer_lock = __import__('threading').Lock()
 
 def get_architecture_designer() -> AIArchitectureDesigner:
-    """Get singleton AI architecture designer"""
+    """Get singleton AI architecture designer (thread-safe)."""
     global _designer_instance
     if _designer_instance is None:
-        _designer_instance = AIArchitectureDesigner()
+        with _designer_lock:
+            if _designer_instance is None:
+                _designer_instance = AIArchitectureDesigner()
     return _designer_instance

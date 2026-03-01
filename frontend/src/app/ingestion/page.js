@@ -72,9 +72,9 @@ export default function IngestionPage() {
                 service_name: formData.service_name,
                 service_type: formData.service_type,
                 version: formData.version,
-                endpoints: formData.endpoints.split('\n').filter(e => e.trim()).map(e => {
-                    const parts = e.trim().split(' ');
-                    return { method: parts[0] || 'GET', path: parts[1] || e, handler: parts[2] || '' };
+                endpoints: formData.endpoints.split('\n').filter(ep => ep.trim()).map(ep => {
+                    const parts = ep.trim().split(' ');
+                    return { method: parts[0] || 'GET', path: parts[1] || ep, handler: parts[2] || '' };
                 }),
                 databases: formData.databases.split('\n').filter(d => d.trim()).map(d => {
                     const parts = d.trim().split(':');

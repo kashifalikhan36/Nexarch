@@ -111,7 +111,13 @@ async def get_architecture_map(
 ):
     """Architecture graph data optimised for visualisation."""
     nodes, edges = GraphService.build_graph(db, tenant_id)
-    G = GraphService.get_graph_from_db(db, tenant_id)
+    # Build the NetworkX graph from the already-fetched nodes/edges to avoid a second DB round trip
+    import networkx as _nx
+    G = _nx.DiGraph()
+    for n in nodes:
+        G.add_node(n.id, type=n.type)
+    for e in edges:
+        G.add_edge(e.source, e.target, call_count=e.call_count, avg_latency_ms=e.avg_latency_ms)
     analysis = GraphAnalysis.analyze_architecture(G)
 
     enriched_nodes = []

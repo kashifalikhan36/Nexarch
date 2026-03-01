@@ -27,11 +27,11 @@ export default function ApiKeysPage() {
     }
 
     if (!isAuthenticated) {
+        // Redirect is firing via useEffect; show spinner to prevent flash of content
         return (
-            <div className="auth-required">
-                <h2 className="display-title display-md">ACCESS REQUIRED</h2>
-                <p>Please sign in to access API keys.</p>
-                <Link href="/login" className="btn btn-primary">Sign In</Link>
+            <div className="page-loading">
+                <div className="spinner"></div>
+                <p>Redirecting...</p>
             </div>
         );
     }

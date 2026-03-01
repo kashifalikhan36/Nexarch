@@ -1,26 +1,17 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from db.base import get_db
-from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import Dict, Any
 from models.workflow import Workflow
+from Schemas.workflow import WorkflowsResponse, WorkflowComparison
 from models.workflow_graph import WorkflowArchitectureGraphResponse
 from services.workflow_generator import WorkflowGenerator
 from services.workflow_graph_service import WorkflowGraphService
 from services.issue_detector import IssueDetector
 from datetime import datetime
 from core.logging import get_logger
-from dependencies.auth import get_tenant_id_from_jwt as get_tenant_id
+from dependencies.auth import get_tenant_id_from_jwt_or_api_key as get_tenant_id
 from core.cache import get_cache_manager
-
-class WorkflowsResponse(BaseModel):
-    workflows: List[Workflow]
-    generated_at: str
-
-class WorkflowComparison(BaseModel):
-    workflows: List[Workflow]
-    recommendation: str
-    comparison_matrix: Dict[str, Any]
 
 router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
 logger = get_logger(__name__)
@@ -28,6 +19,7 @@ logger = get_logger(__name__)
 
 @router.get("/generated", response_model=WorkflowsResponse)
 async def get_generated_workflows(
+    background_tasks: BackgroundTasks,
     tenant_id: str = Depends(get_tenant_id),
     db: Session = Depends(get_db)
 ):
@@ -49,8 +41,8 @@ async def get_generated_workflows(
         "generated_at": datetime.utcnow().isoformat()
     }
     
-    # Cache result
-    cache.set(tenant_id, "workflows", response_data)
+    # Cache result in background (non-blocking)
+    background_tasks.add_task(cache.set, tenant_id, "workflows", response_data)
     
     return WorkflowsResponse(**response_data)
 

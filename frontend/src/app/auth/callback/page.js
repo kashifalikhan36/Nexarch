@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { tokenStorage } from '@/lib/api-client';
 
 function CallbackContent() {
     const router = useRouter();
@@ -20,9 +21,9 @@ function CallbackContent() {
             const accessToken = hashParams.get('access_token');
 
             if (accessToken) {
-                // Token provided directly in hash — store then refresh AuthContext state
-                // so the user arrives at the dashboard fully authenticated (not just tokenised)
-                localStorage.setItem('access_token', accessToken);
+                // Token provided directly in hash — store via tokenStorage then refresh
+                // AuthContext state so the user arrives at the dashboard fully authenticated.
+                tokenStorage.set(accessToken);
                 await checkAuth();
                 router.push('/dashboard');
             } else if (code) {

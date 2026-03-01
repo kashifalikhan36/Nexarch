@@ -86,7 +86,7 @@ async def liveness_check():
 
 
 @router.post("/sdk/heartbeat")
-async def sdk_heartbeat(request: Request):
+async def sdk_heartbeat(request: Request, db: Session = Depends(get_db)):
     """
     Receive a periodic heartbeat from SDK-instrumented services.
 
@@ -103,14 +103,18 @@ async def sdk_heartbeat(request: Request):
     service     = body.get("service", "unknown")
     environment = body.get("environment", "unknown")
 
-    # Resolve tenant from API key header (best-effort; no hard auth required)
+    # Resolve tenant from API key header by looking it up in the database.
+    # The key format is ``nex_<base64>`` — there is no embedded tenant_id.
     api_key   = request.headers.get("X-API-Key") or request.headers.get("x-api-key")
     tenant_id = "global"
     if api_key:
-        # Format: nex_<tenant_id>_...
-        parts = api_key.split("_")
-        if len(parts) >= 2:
-            tenant_id = parts[1]
+        try:
+            from db.models import APIKey
+            db_key = db.query(APIKey).filter(APIKey.key == api_key, APIKey.is_active == True).first()
+            if db_key:
+                tenant_id = db_key.tenant_id
+        except Exception as e:
+            logger.warning(f"Heartbeat tenant lookup failed: {e}")
 
     # Write to cache with 5-minute TTL (cache.set is synchronous)
     cache = get_cache_manager()

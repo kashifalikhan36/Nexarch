@@ -104,14 +104,14 @@ async def get_admin_stats(db: Session = Depends(get_db)):
     
     # Tenant statistics
     total_tenants = db.query(func.count(Tenant.id)).scalar()
-    active_tenants = db.query(func.count(Tenant.id)).filter(Tenant.active == True).scalar()
+    active_tenants = db.query(func.count(Tenant.id)).filter(Tenant.is_active == True).scalar()
     
     # User statistics
     total_users = db.query(func.count(User.id)).scalar()
     
     # API Key statistics
     total_api_keys = db.query(func.count(APIKey.id)).scalar()
-    active_api_keys = db.query(func.count(APIKey.id)).filter(APIKey.active == True).scalar()
+    active_api_keys = db.query(func.count(APIKey.id)).filter(APIKey.is_active == True).scalar()
     
     # Span statistics
     total_spans = db.query(func.count(Span.id)).scalar()
@@ -125,7 +125,7 @@ async def get_admin_stats(db: Session = Depends(get_db)):
             "tenant_id": tenant.id,
             "tenant_name": tenant.name,
             "span_count": span_count or 0,
-            "active": tenant.active
+            "active": tenant.is_active
         })
     
     return {

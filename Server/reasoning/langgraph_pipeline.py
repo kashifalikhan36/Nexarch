@@ -122,12 +122,6 @@ class WorkflowReasoningPipeline:
         
         return {"strategy_selection": {**state.get("strategy_selection", {}), **strategies}}
     
-    def _route_generation(self, state: ReasoningState) -> str:
-        """Conditional routing"""
-        if not state.get("issues"):
-            return "end"
-        return "all"
-    
     def _generate_minimal(self, state: ReasoningState) -> ReasoningState:
         """Node: Minimal workflow"""
         issues = state["issues"][:3]
@@ -277,7 +271,16 @@ class WorkflowReasoningPipeline:
         return {"workflows": [workflow]}
     
     def _finalize(self, state: ReasoningState) -> ReasoningState:
-        """Node: Finalize"""
+        """Node: Finalize — only marks complete once all 3 parallel branches have contributed.
+
+        With a fan-in from generate_minimal, generate_performance, and
+        generate_cost, LangGraph may invoke this node once per incoming edge
+        (before the operator.add reducer has merged all branches).  Guard by
+        waiting until three workflow items are present.
+        """
+        if len(state.get("workflows", [])) < 3:
+            # Partial state — at least one branch hasn't completed yet; no-op.
+            return {}
         return {"analysis_complete": True}
     
     def run(self, G: nx.DiGraph) -> List[Workflow]:

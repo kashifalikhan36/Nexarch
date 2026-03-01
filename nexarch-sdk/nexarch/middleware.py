@@ -10,7 +10,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from .loggers import NexarchLogger
 from .models import SpanData, ErrorData
-from .tracing import set_trace_context, clear_trace_context, Span, Sampler
+from .tracing import set_trace_context, clear_trace_context, Span, Sampler, get_downstream_ms
 from .queue import get_log_queue
 from .auto_discovery import ArchitectureDiscovery, DependencyMapper, TrafficAnalyzer
 
@@ -151,7 +151,7 @@ class NexarchMiddleware(BaseHTTPMiddleware):
                 "calls_external": len([d for d in downstream_deps if d["type"] == "external_http"]) > 0,
                 "latency_breakdown": {
                     "total_ms": latency_ms,
-                    "downstream_ms": sum(span_tags.get(f"{dep['type']}_latency", 0) for dep in downstream_deps)
+                    "downstream_ms": round(get_downstream_ms(), 2),
                 }
             }
             

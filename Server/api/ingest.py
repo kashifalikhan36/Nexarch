@@ -83,13 +83,13 @@ async def ingest_batch(
     """Accept batch of telemetry spans — stored in a single DB transaction"""
     success, failed = IngestService.store_spans_batch(db, spans, tenant_id)
 
-    # Push successfully prepared spans to Pathway stream in background
-    for span in spans[:success]:
+    # Push successfully stored spans to Pathway stream in background
+    for span in success:
         span_dict = {**span.model_dump(), "tenant_id": tenant_id}
         background_tasks.add_task(push_span_to_stream, span_dict)
 
     return BatchIngestResponse(
-        count=success,
+        count=len(success),
         failed=failed
     )
 
@@ -126,6 +126,7 @@ async def ingest_architecture_discovery(
             existing.databases = json.dumps(discovery.databases)
             existing.external_services = json.dumps(discovery.external_services)
             existing.middleware = json.dumps(discovery.middleware)
+            existing.dependencies = json.dumps(discovery.dependencies)
             existing.architecture_patterns = json.dumps(discovery.architecture_patterns)
             existing.updated_at = datetime.utcnow()
             logger.info(f"Updated existing discovery for service {discovery.service_name}")
@@ -140,6 +141,7 @@ async def ingest_architecture_discovery(
                 databases=json.dumps(discovery.databases),
                 external_services=json.dumps(discovery.external_services),
                 middleware=json.dumps(discovery.middleware),
+                dependencies=json.dumps(discovery.dependencies),
                 architecture_patterns=json.dumps(discovery.architecture_patterns)
             )
             db.add(new_discovery)
@@ -189,15 +191,7 @@ async def get_architecture_discoveries(
                 "databases": json.loads(disc.databases) if disc.databases else [],
                 "external_services": json.loads(disc.external_services) if disc.external_services else [],
                 "middleware": json.loads(disc.middleware) if disc.middleware else [],
-                "architecture_patterns": json.loads(disc.architecture_patterns) if disc.architecture_patterns else {},
-                "discovered_at": disc.discovered_at.isoformat() if disc.discovered_at else None,
-                "updated_at": disc.updated_at.isoformat() if disc.updated_at else None
-            })
-        
-        return {
-            "total": len(result),
-            "discoveries": result
-        }
+                    "dependencies": json.loads(disc.dependencies) if disc.dependencies else {},
     
     except Exception as e:
         logger.error(f"Failed to retrieve discoveries for tenant {tenant_id}: {e}")

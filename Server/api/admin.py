@@ -34,6 +34,12 @@ class CreateTenantRequest(BaseModel):
     admin_email: EmailStr
 
 
+class UpdateTenantRequest(BaseModel):
+    is_active: Optional[bool] = None
+    name: Optional[str] = None
+    max_spans_per_day: Optional[int] = None
+
+
 class TenantResponse(BaseModel):
     id: str
     name: str
@@ -42,9 +48,9 @@ class TenantResponse(BaseModel):
     created_at: datetime
 
 
-@router.post("/tenants", response_model=TenantResponse)
+@router.post("/tenants", response_model=TenantResponse, dependencies=[Depends(_require_admin)])
 async def create_tenant(request: CreateTenantRequest, db: Session = Depends(get_db)):
-    """Create new tenant with admin user and API key (PUBLIC - NO AUTH REQUIRED)"""
+    """Create new tenant with admin user and API key (admin only)"""
     
     # Check if email already exists
     existing_user = db.query(User).filter(User.email == request.admin_email).first()
@@ -56,7 +62,7 @@ async def create_tenant(request: CreateTenantRequest, db: Session = Depends(get_
     tenant = Tenant(
         id=tenant_id,
         name=request.name,
-        created_at=datetime.now(),
+        created_at=datetime.utcnow(),
         is_active=True
     )
     db.add(tenant)
@@ -67,7 +73,7 @@ async def create_tenant(request: CreateTenantRequest, db: Session = Depends(get_
         id=user_id,
         email=request.admin_email,
         tenant_id=tenant_id,
-        created_at=datetime.now(),
+        created_at=datetime.utcnow(),
         is_active=True
     )
     db.add(user)
@@ -80,7 +86,7 @@ async def create_tenant(request: CreateTenantRequest, db: Session = Depends(get_
         user_id=user_id,
         name="Default API Key",
         is_active=True,
-        created_at=datetime.now()
+        created_at=datetime.utcnow()
     )
     db.add(api_key_obj)
     
@@ -129,25 +135,20 @@ async def get_tenant(tenant_id: str, db: Session = Depends(get_db)):
 @router.patch("/tenants/{tenant_id}", dependencies=[Depends(_require_admin)])
 async def update_tenant(
     tenant_id: str,
-    is_active: bool = None,
-    name: str = None,
-    max_spans_per_day: int = None,
+    body: UpdateTenantRequest,
     db: Session = Depends(get_db)
 ):
     """Update tenant settings"""
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
-    
-    if is_active is not None:
-        tenant.is_active = is_active
-    if name is not None:
-        tenant.name = name
-    if max_spans_per_day is not None:
-        tenant.max_spans_per_day = max_spans_per_day
-    
-    db.commit()
-    
+
+    if body.is_active is not None:
+        tenant.is_active = body.is_active
+    if body.name is not None:
+        tenant.name = body.name
+    if body.max_spans_per_day is not None:
+        tenant.max_spans_per_day = body.max_spans_per_day
     return {
         "id": tenant.id,
         "name": tenant.name,

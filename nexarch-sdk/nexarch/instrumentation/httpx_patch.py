@@ -2,8 +2,9 @@
 import time
 import uuid
 from typing import Optional
-from ..tracing import get_trace_id, get_span_id, Span
+from ..tracing import get_trace_id, get_span_id, Span, add_downstream_ms
 from ..queue import get_log_queue
+import time
 
 _original_send = None
 _original_async_send = None
@@ -49,6 +50,7 @@ def _instrumented_send(self, request, **kwargs):
     
     error: Optional[str] = None
     status_code: Optional[int] = None
+    start = time.time()
     
     try:
         response = _original_send(self, request, **kwargs)
@@ -58,12 +60,18 @@ def _instrumented_send(self, request, **kwargs):
         error = str(e)
         raise
     finally:
+        latency_ms = round((time.time() - start) * 1000, 2)
         span.finish(status_code=status_code, error=error)
+        add_downstream_ms(latency_ms)
         
         get_log_queue().enqueue({
             "type": "span",
             "timestamp": span.start_time,
-            "data": span.to_dict()
+            "data": {
+                **span.to_dict(),
+                "latency_ms": latency_ms,
+                "http_latency": latency_ms,
+            }
         })
 
 
@@ -87,6 +95,7 @@ async def _instrumented_async_send(self, request, **kwargs):
     
     error: Optional[str] = None
     status_code: Optional[int] = None
+    start = time.time()
     
     try:
         response = await _original_async_send(self, request, **kwargs)
@@ -96,10 +105,16 @@ async def _instrumented_async_send(self, request, **kwargs):
         error = str(e)
         raise
     finally:
+        latency_ms = round((time.time() - start) * 1000, 2)
         span.finish(status_code=status_code, error=error)
+        add_downstream_ms(latency_ms)
         
         get_log_queue().enqueue({
             "type": "span",
             "timestamp": span.start_time,
-            "data": span.to_dict()
+            "data": {
+                **span.to_dict(),
+                "latency_ms": latency_ms,
+                "http_latency": latency_ms,
+            }
         })

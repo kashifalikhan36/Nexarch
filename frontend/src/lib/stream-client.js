@@ -30,7 +30,7 @@ export function useRealtimeStream(tenantId, options = {}) {
     const [connected, setConnected] = useState(false);
     const [error, setError] = useState(null);
 
-    // metrics: Map<serviceName, latestMetricRow>
+    // metrics: Map<serviceName, MetricRow[]>  (newest first, bounded by maxMetricHistory)
     const [metrics, setMetrics] = useState({});
     // issues: array of latest issue events, newest first
     const [issues, setIssues] = useState([]);
@@ -89,10 +89,14 @@ export function useRealtimeStream(tenantId, options = {}) {
                 setLastEvent(msg);
 
                 if (msg.type === 'metrics_update') {
-                    setMetrics((prev) => ({
-                        ...prev,
-                        [msg.service]: msg.data,
-                    }));
+                    setMetrics((prev) => {
+                        const history = prev[msg.service] || [];
+                        const next = [msg.data, ...history];
+                        return {
+                            ...prev,
+                            [msg.service]: next.slice(0, maxMetricHistory),
+                        };
+                    });
                 } else if (msg.type === 'issue_detected') {
                     setIssues((prev) => {
                         const next = [msg.data, ...prev];
@@ -122,7 +126,7 @@ export function useRealtimeStream(tenantId, options = {}) {
                 setError('Stream unavailable — too many reconnect attempts.');
             }
         };
-    }, [tenantId, maxIssueHistory]);
+    }, [tenantId, maxIssueHistory, maxMetricHistory]);
 
     useEffect(() => {
         isMounted.current = true;

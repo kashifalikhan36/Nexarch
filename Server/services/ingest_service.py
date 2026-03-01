@@ -38,13 +38,15 @@ class IngestService:
     @staticmethod
     def store_spans_batch(
         db: Session, spans_data: List[SpanIngest], tenant_id: str
-    ) -> Tuple[int, int]:
+    ) -> Tuple[List["SpanIngest"], int]:
         """Store a list of spans in a SINGLE DB transaction.
 
-        Returns ``(success_count, fail_count)``.  A single commit at the end is
-        dramatically faster than N individual commits for large batches.
+        Returns ``(successful_spans, fail_count)`` where *successful_spans* is
+        the list of ``SpanIngest`` items that were persisted.  A single commit
+        is dramatically faster than N individual commits for large batches.
         """
         prepared: List[DBSpan] = []
+        prepared_input: List[SpanIngest] = []  # parallel list for stream push
         fail = 0
 
         for span_data in spans_data:
@@ -66,6 +68,7 @@ class IngestService:
                 )
                 db.add(span)
                 prepared.append(span)
+                prepared_input.append(span_data)
             except Exception as e:
                 logger.error(f"Failed to prepare span {span_data.span_id}: {e}")
                 fail += 1
@@ -79,6 +82,6 @@ class IngestService:
             except Exception as e:
                 db.rollback()
                 logger.error(f"Batch commit failed for tenant {tenant_id}: {e}")
-                return 0, len(spans_data)
+                return [], len(spans_data)
 
-        return len(prepared), fail
+        return prepared_input, fail

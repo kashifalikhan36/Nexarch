@@ -69,7 +69,7 @@ export default function WorkflowsPage() {
             const data = await apiClient.getWorkflowSuggestions(workflowGoal);
             setWorkflows(prev => ({
                 ...prev,
-                suggestions: data.suggestions || data.workflows
+                suggestions: data.suggestions || []
             }));
         } catch (err) {
             setError(err.message);
