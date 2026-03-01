@@ -1,4 +1,4 @@
-"""Dashboard – Trends sub-router: /trends, /traces/timeline"""
+﻿"""Dashboard – Trends sub-router: /trends, /traces/timeline"""
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from db.base import get_db
@@ -50,7 +50,7 @@ async def get_trends(
     hours: int = Query(default=24, ge=1, le=168),
 ):
     """Time-series trends for latency, error rate, and volume."""
-    end_time   = datetime.now()
+    end_time   = datetime.utcnow()
     start_time = end_time - timedelta(hours=hours)
 
     spans = (

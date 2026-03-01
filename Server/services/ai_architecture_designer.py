@@ -1,4 +1,4 @@
-"""
+﻿"""
 AI Architecture Designer - Uses Azure OpenAI + LangChain to design new architectures
 Generates completely NEW architecture designs based on requirements
 """
@@ -140,7 +140,7 @@ Output in JSON format with clear structure.
                 "microservices": self._extract_microservices(result_text),
                 "migration_order": self._extract_migration_order(result_text),
                 "shared_concerns": ["authentication", "logging", "monitoring", "configuration"],
-                "generated_at": datetime.now().isoformat()
+                "generated_at": datetime.utcnow().isoformat()
             }
             
             return decomposition
@@ -191,7 +191,7 @@ Output structured event-driven design.
                 "streams": self._extract_streams(result_text),
                 "patterns": ["event_sourcing", "cqrs", "saga"],
                 "message_broker": "kafka",
-                "generated_at": datetime.now().isoformat()
+                "generated_at": datetime.utcnow().isoformat()
             }
         
         except Exception as e:
@@ -243,7 +243,7 @@ Focus on practical, proven patterns.
             return {
                 "optimizations": self._extract_optimizations(result_text),
                 "priority_order": ["high_impact_low_effort", "medium", "long_term"],
-                "generated_at": datetime.now().isoformat()
+                "generated_at": datetime.utcnow().isoformat()
             }
         
         except Exception as e:
@@ -361,7 +361,7 @@ Consider the team size and timeline constraints.
             ],
             "migration_order": ["user-service", "product-service", "order-service"],
             "shared_concerns": ["authentication", "logging", "monitoring", "configuration"],
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.utcnow().isoformat(),
             "note": "AI unavailable - using template decomposition"
         }
 
@@ -374,7 +374,7 @@ Consider the team size and timeline constraints.
             "streams": ["events-stream", "commands-stream"],
             "patterns": ["event_sourcing", "cqrs", "saga"],
             "message_broker": "kafka",
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.utcnow().isoformat(),
             "note": "AI unavailable - using template events"
         }
 

@@ -1,4 +1,4 @@
-"""Dashboard – Insights sub-router: /insights, /recommendations, /workflows"""
+﻿"""Dashboard – Insights sub-router: /insights, /recommendations, /workflows"""
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from db.base import get_db
@@ -32,7 +32,7 @@ async def get_ai_insights(
 
     try:
         metrics = MetricsService.compute_global_metrics(db, tenant_id)
-        start_time = datetime.now() - timedelta(hours=24)
+        start_time = datetime.utcnow() - timedelta(hours=24)
         recent_spans = db.query(Span).filter(
             Span.tenant_id == tenant_id,
             Span.start_time >= start_time,
@@ -148,7 +148,7 @@ async def get_ai_architecture_recommendations(
                     "critical_issues": len([i for i in issues if i.severity == "critical"]),
                     "architecture_type": "microservices" if len(nodes) > 5 else "monolith",
                 },
-                "generated_at": datetime.now().isoformat(),
+                "generated_at": datetime.utcnow().isoformat(),
             }
         else:
             result = {
@@ -166,7 +166,7 @@ async def get_ai_architecture_recommendations(
                     "priority": "medium",
                 },
                 "note": "Azure OpenAI not configured - using rule-based recommendations",
-                "generated_at": datetime.now().isoformat(),
+                "generated_at": datetime.utcnow().isoformat(),
             }
 
         if cache:
@@ -235,7 +235,7 @@ async def generate_workflow_alternatives(
                     "total_dependencies": len(edges),
                     "critical_issues": len([i for i in issues if i.severity == "critical"]),
                 },
-                "generated_at": datetime.now().isoformat(),
+                "generated_at": datetime.utcnow().isoformat(),
             }
         else:
             logger.warning("Azure OpenAI not configured, using LangGraph fallback")
@@ -246,7 +246,7 @@ async def generate_workflow_alternatives(
                 "goal": goal,
                 "architecture_summary": {"total_services": len(nodes), "total_dependencies": len(edges), "critical_issues": len([i for i in issues if i.severity == "critical"])},
                 "note": "Azure OpenAI not configured - using LangGraph pipeline only",
-                "generated_at": datetime.now().isoformat(),
+                "generated_at": datetime.utcnow().isoformat(),
             }
 
         if cache:

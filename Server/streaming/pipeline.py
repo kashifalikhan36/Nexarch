@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
 import threading
 import time
 from datetime import datetime
@@ -33,18 +34,35 @@ _span_count_lock = threading.Lock()
 _pathway_available: bool = False
 
 # --------------------------------------------------------------------------
-# Try importing Pathway; if not installed the pipeline degrades gracefully
+# Try importing Pathway.
+# Pathway is Linux/macOS-only; on Windows we skip it unconditionally and
+# fall back to the DB-polling broadcaster.  We also catch any non-Import
+# exception (OSError, AttributeError, etc.) that broken native extensions
+# can raise so the server always starts cleanly.
 # --------------------------------------------------------------------------
 try:
+    if sys.platform == "win32":
+        raise ImportError("Pathway does not support Windows")
     import pathway as pw  # type: ignore[import]
     from streaming.connectors import get_span_subject, get_redis_output
     _pathway_available = True
-except ImportError:
+except (ImportError, Exception) as _pw_exc:
     pw = None  # type: ignore
-    logger.warning(
-        "[Pathway] `pathway` package not installed — real-time streaming disabled. "
-        "Run `pip install pathway` to enable it."
-    )
+    if sys.platform == "win32":
+        logger.warning(
+            "[Streaming] Windows detected — Pathway is Linux/macOS-only. "
+            "Real-time streaming will use the DB-polling fallback. "
+            "All API and WebSocket features work normally."
+        )
+    else:
+        logger.warning(
+            "[Streaming] `pathway` package not installed — "
+            "real-time streaming will use the DB-polling fallback. "
+            "Install `pathway` (Linux/macOS only) for sub-second latency streaming."
+        )
+
+# Public flag — imported by main.py and websocket.py
+PATHWAY_AVAILABLE: bool = _pathway_available
 
 
 # --------------------------------------------------------------------------
@@ -244,9 +262,16 @@ def push_span_to_stream(span_dict: Dict[str, Any]) -> None:
 def get_stream_status() -> Dict[str, Any]:
     """Return health/status info about the pipeline (used by health endpoint)."""
     if not _pathway_available:
+        reason = (
+            "Pathway is not supported on Windows"
+            if sys.platform == "win32"
+            else "pathway package not installed"
+        )
         return {
             "status": "disabled",
-            "reason": "pathway not installed",
+            "reason": reason,
+            "fallback": "db-polling",
+            "platform": sys.platform,
         }
 
     alive = _pipeline_thread is not None and _pipeline_thread.is_alive()

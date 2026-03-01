@@ -9,7 +9,8 @@ from core.cache import init_cache
 from db.base import engine, Base
 from api import ingest, architecture, workflows, health, admin, dashboard, ai_design, system, cache_api, auth, api_keys
 from streaming.websocket import router as stream_router, get_ws_manager
-from streaming.pipeline import start_pipeline
+from streaming.pipeline import start_pipeline, PATHWAY_AVAILABLE
+from streaming.polling_fallback import start_fallback_broadcaster
 
 
 
@@ -47,9 +48,12 @@ async def lifespan(app: FastAPI):
     logger.info("Creating database tables")
     Base.metadata.create_all(bind=engine)
 
-    # Start Pathway streaming pipeline (non-blocking daemon thread)
+    # Start streaming pipeline.
+    # On Linux/macOS with pathway installed: Pathway real-time pipeline.
+    # On Windows (or pathway not installed): DB-polling fallback broadcaster.
     start_pipeline()
-    logger.info("[Pathway] Streaming pipeline started")
+    if not PATHWAY_AVAILABLE:
+        start_fallback_broadcaster()
 
     # Start WebSocket outbox drain task
     drain_task = asyncio.create_task(get_ws_manager().drain_outbox())

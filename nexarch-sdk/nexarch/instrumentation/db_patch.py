@@ -1,4 +1,4 @@
-"""
+﻿"""
 Database instrumentation - Auto-capture all database queries
 Supports: SQLAlchemy, MongoDB, Redis, PostgreSQL, MySQL
 """
@@ -95,7 +95,7 @@ def patch_sqlalchemy():
                 service_name="database",
                 operation="db.query",
                 kind="client",
-                start_time=datetime.now().isoformat(),
+                start_time=datetime.utcnow().isoformat(),
                 end_time=None,
                 latency_ms=None,
                 status_code=None,
@@ -159,7 +159,7 @@ def patch_redis():
                 service_name="redis",
                 operation=f"redis.{command}",
                 kind="client",
-                start_time=datetime.now().isoformat(),
+                start_time=datetime.utcnow().isoformat(),
                 end_time=None,
                 latency_ms=None,
                 status_code=None,
@@ -258,7 +258,7 @@ def patch_pymongo():
                     service_name="mongodb",
                     operation=f"mongodb.{request_data['command']}",
                     kind="client",
-                    start_time=datetime.now().isoformat(),
+                    start_time=datetime.utcnow().isoformat(),
                     end_time=None,
                     latency_ms=None,
                     status_code=None,

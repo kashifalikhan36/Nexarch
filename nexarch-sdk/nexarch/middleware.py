@@ -1,4 +1,4 @@
-"""Nexarch Middleware"""
+﻿"""Nexarch Middleware"""
 import time
 import traceback
 import uuid
@@ -57,7 +57,7 @@ class NexarchMiddleware(BaseHTTPMiddleware):
                     # Enqueue discovery data
                     get_log_queue().enqueue({
                         "type": "architecture_discovery",
-                        "timestamp": datetime.now().isoformat(),
+                        "timestamp": datetime.utcnow().isoformat(),
                         "data": discovery_data
                     })
                     

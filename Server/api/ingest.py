@@ -191,7 +191,10 @@ async def get_architecture_discoveries(
                 "databases": json.loads(disc.databases) if disc.databases else [],
                 "external_services": json.loads(disc.external_services) if disc.external_services else [],
                 "middleware": json.loads(disc.middleware) if disc.middleware else [],
-                    "dependencies": json.loads(disc.dependencies) if disc.dependencies else {},
+                "dependencies": json.loads(disc.dependencies) if disc.dependencies else {},
+            })
+        
+        return result
     
     except Exception as e:
         logger.error(f"Failed to retrieve discoveries for tenant {tenant_id}: {e}")

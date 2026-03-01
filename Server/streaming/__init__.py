@@ -22,6 +22,14 @@ Flow:
               └─► WebSocket push   (live updates to connected browsers)
 """
 
-from .pipeline import start_pipeline, push_span_to_stream, get_stream_status
+from .pipeline import start_pipeline, push_span_to_stream, get_stream_status, PATHWAY_AVAILABLE
+from .polling_fallback import start_fallback_broadcaster, get_fallback_status
 
-__all__ = ["start_pipeline", "push_span_to_stream", "get_stream_status"]
+__all__ = [
+    "start_pipeline",
+    "push_span_to_stream",
+    "get_stream_status",
+    "PATHWAY_AVAILABLE",
+    "start_fallback_broadcaster",
+    "get_fallback_status",
+]

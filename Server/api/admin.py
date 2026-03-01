@@ -201,7 +201,7 @@ async def create_api_key(
         user_id=None,
         name=name,
         is_active=True,
-        created_at=datetime.now()
+        created_at=datetime.utcnow()
     )
     db.add(api_key_obj)
     db.commit()

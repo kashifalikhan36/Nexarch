@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-03-01
+
+### Added
+- Downstream ms tracking via `ContextVar` — `add_downstream_ms()` / `get_downstream_ms()` in `nexarch.tracing`
+- `db_patch.py`: SQLAlchemy, Redis, and MongoDB patches now record downstream latency into tracing context
+- `requests_patch.py`: Records `latency_ms` and `http_latency` in span data; reports downstream ms to context
+- `httpx_patch.py`: Records `latency_ms` and `http_latency` for both sync and async HTTP calls
+
+### Fixed
+- `middleware.py`: `downstream_ms` now correctly reads from tracing context instead of `span_tags`
+- `exporters/http.py`: Wrapped `resp.json()` in `try/except ValueError` to prevent `JSONDecodeError` from bypassing DLQ
+- `db_patch.py`: Added idempotency guards (`_redis_is_patched`, `_pymongo_is_patched`) — patching is now safe to call multiple times
+- `tracing/context.py`: `set_trace_context` and `clear_trace_context` now reset the downstream ms accumulator
+
 ## [0.2.0] - 2026-01-17
 
 ### Changed

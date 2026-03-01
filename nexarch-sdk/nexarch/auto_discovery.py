@@ -1,4 +1,4 @@
-"""
+﻿"""
 Auto-Discovery Module - Automatically detect architecture patterns from FastAPI apps
 Discovers:
 - All API endpoints and their response models
@@ -35,7 +35,7 @@ class ArchitectureDiscovery:
             "external_services": list(self.external_services),
             "dependencies": self.dependencies,
             "architecture_patterns": self.detect_patterns(),
-            "discovered_at": datetime.now().isoformat()
+            "discovered_at": datetime.utcnow().isoformat()
         }
     
     def discover_endpoints(self) -> List[Dict[str, Any]]:

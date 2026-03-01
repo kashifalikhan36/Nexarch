@@ -91,6 +91,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # silently ignore unknown env vars (e.g. legacy CACHE_ENABLED)
 
 
 @lru_cache()

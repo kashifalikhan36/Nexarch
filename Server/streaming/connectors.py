@@ -45,7 +45,7 @@ try:
             except Exception as exc:
                 logger.debug(f"[Pathway] SpanSubject.push skipped: {exc}")
 
-except ImportError:  # Pathway not installed — provide a no-op stub
+except (ImportError, Exception):  # Pathway not installed or not supported (e.g. Windows)
     pw = None  # type: ignore
 
     class SpanSubject:  # type: ignore[no-redef]

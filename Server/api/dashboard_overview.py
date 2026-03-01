@@ -1,4 +1,4 @@
-"""Dashboard – Overview sub-router: /overview, /architecture-map, /services, /health, /dependencies, /bottlenecks"""
+﻿"""Dashboard – Overview sub-router: /overview, /architecture-map, /services, /health, /dependencies, /bottlenecks"""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import networkx as nx
@@ -95,7 +95,7 @@ async def get_dashboard_overview(
         "architecture_complexity": analysis.get("avg_degree", 0),
         "active_incidents": critical_issues,
         "uptime_percentage": round(uptime, 2),
-        "last_updated": datetime.now().isoformat(),
+        "last_updated": datetime.utcnow().isoformat(),
     }
 
     if cache:
@@ -237,7 +237,7 @@ async def get_system_health(
             "architecture":  {"score": arch,  "status": "good" if arch  >= 80 else "warning" if arch  >= 60 else "critical", "metrics": {"critical_issues": len([i for i in issues if i.severity == "critical"]), "total_issues": len(issues)}},
             "scalability":   {"score": scale, "status": "good" if scale >= 80 else "warning" if scale >= 60 else "critical", "metrics": {"bottlenecks": len(analysis.get("bottlenecks", [])), "has_cycles": not analysis.get("is_dag", True)}},
         },
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
 

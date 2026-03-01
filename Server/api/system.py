@@ -1,4 +1,4 @@
-"""
+﻿"""
 System Info API - Comprehensive system information and statistics
 """
 from fastapi import APIRouter, Depends
@@ -48,7 +48,7 @@ async def get_system_stats(
     tenant_id: str = Depends(get_tenant_id)
 ):
     """Get tenant-specific statistics"""
-    now = datetime.now()
+    now = datetime.utcnow()
     last_hour = now - timedelta(hours=1)
     last_day = now - timedelta(days=1)
     
@@ -144,7 +144,7 @@ async def get_admin_stats(db: Session = Depends(get_db)):
             "total": total_spans or 0
         },
         "tenant_breakdown": tenant_breakdown,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.utcnow().isoformat()
     }
 
 

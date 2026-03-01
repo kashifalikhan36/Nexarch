@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+﻿from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from db.base import get_db
@@ -18,7 +18,7 @@ async def health_check():
     """Basic health check"""
     return {
         "status": "healthy",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.utcnow().isoformat()
     }
 
 
@@ -48,7 +48,7 @@ async def detailed_health_check(db: Session = Depends(get_db)):
     
     return {
         "status": "healthy" if db_healthy else "degraded",
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.utcnow().isoformat(),
         "version": settings.APP_VERSION,
         "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
         "components": {

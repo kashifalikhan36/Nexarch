@@ -15,7 +15,7 @@ export const createTenant = (data) =>
 export const getTenants = () => apiRequest('/api/v1/admin/tenants');
 export const getTenant = (id) => apiRequest(`/api/v1/admin/tenants/${id}`);
 export const updateTenant = (id, data) =>
-    apiRequest(`/api/v1/admin/tenants/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    apiRequest(`/api/v1/admin/tenants/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deleteTenant = (id) =>
     apiRequest(`/api/v1/admin/tenants/${id}`, { method: 'DELETE' });
 

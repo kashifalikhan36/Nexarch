@@ -162,11 +162,23 @@ async def stream_live(
     await manager.connect(websocket, tenant_id)
 
     try:
-        # Send initial connection ack
+        # Send initial connection ack — message reflects actual streaming mode
+        try:
+            from streaming.pipeline import PATHWAY_AVAILABLE as _pw_avail
+        except Exception:
+            _pw_avail = False
+
         await websocket.send_json({
             "type": "connected",
             "tenant_id": tenant_id,
-            "message": "Real-time stream active. Pathway pipeline updates will be pushed here.",
+            "streaming_mode": "pathway" if _pw_avail else "polling",
+            "message": (
+                "Real-time stream active (Pathway live pipeline)."
+                if _pw_avail
+                else "Real-time stream active (DB-polling fallback \u2014 "
+                     "Pathway is unavailable on this platform). "
+                     "All features work normally."
+            ),
         })
 
         # Keep connection alive — the drain_outbox task handles outbound messages
