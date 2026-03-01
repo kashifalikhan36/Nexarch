@@ -1,7 +1,16 @@
 {
+  "/_global-error/page": "app/_global-error/page.js",
   "/_not-found/page": "app/_not-found/page.js",
-  "/page": "app/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/ai-design/page": "app/ai-design/page.js",
   "/api-keys/page": "app/api-keys/page.js",
-  "/login/page": "app/login/page.js"
+  "/architecture/page": "app/architecture/page.js",
+  "/auth/callback/page": "app/auth/callback/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/ingestion/page": "app/ingestion/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/settings/page": "app/settings/page.js",
+  "/signup/page": "app/signup/page.js",
+  "/workflows/page": "app/workflows/page.js"
 }

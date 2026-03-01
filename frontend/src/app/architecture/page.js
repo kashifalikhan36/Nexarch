@@ -17,8 +17,8 @@ import '@xyflow/react/dist/style.css';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
 import { useRealtimeStream } from '@/lib/stream-client';
-import { LiveStreamBadge } from '@/components/LiveStreamBadge';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import LiveStreamBadge from '@/components/LiveStreamBadge';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import {
     Network,
     AlertTriangle,
